@@ -1,0 +1,10 @@
+Tyson-media-/
+├── package.json
+├── next.config.ts
+├── tsconfig.json
+├── next-env.d.ts
+├── postcss.config.mjs
+└── app/
+    ├── page.tsx
+    ├── layout.tsx
+    └── globals.css
