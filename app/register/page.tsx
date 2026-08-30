@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
@@ -21,11 +21,13 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-      if (!url || !key) {
-        setMessage("إعدادات Supabase غير موجودة في الموقع.");
+      if (!supabaseUrl || !supabaseKey) {
+        setMessage(
+          "إعدادات Supabase غير موجودة في الموقع. تأكد من Environment Variables في Vercel."
+        );
         return;
       }
 
@@ -39,11 +41,11 @@ export default function RegisterPage() {
         return;
       }
 
-      const supabase = createClient(url, key);
+      const supabase = createClient(supabaseUrl, supabaseKey);
 
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
-        password,
+        password: password,
         options: {
           data: {
             name: name.trim(),
@@ -53,44 +55,24 @@ export default function RegisterPage() {
       });
 
       if (error) {
-        setMessage(error.message);
+        setMessage("خطأ: " + error.message);
         return;
       }
 
       if (!data.user) {
-        setMessage("لم يتم إنشاء الحساب.");
+        setMessage("حدث خطأ ولم يتم إنشاء الحساب.");
         return;
       }
 
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert({
-          id: data.user.id,
-          name: name.trim(),
-          account_type: accountType,
-        });
+      setMessage("تم إنشاء الحساب بنجاح.");
 
-      if (profileError) {
-        setMessage(
-          "تم إنشاء الحساب، لكن حدث خطأ في حفظ البيانات: " +
-            profileError.message
-        );
-        return;
-      }
-
-      if (data.session) {
-        window.location.href =
-          accountType === "provider" ? "/provider" : "/";
-        return;
-      }
-
-      setMessage(
-        "تم إنشاء الحساب بنجاح. يمكنك الآن تسجيل الدخول."
-      );
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1000);
     } catch (error) {
       setMessage(
         error instanceof Error
-          ? error.message
+          ? "خطأ: " + error.message
           : "حدث خطأ غير متوقع."
       );
     } finally {
@@ -109,9 +91,7 @@ export default function RegisterPage() {
             Tyson <span className="text-[#b87333]">Media</span>
           </Link>
 
-          <h1 className="mt-8 text-3xl font-black">
-            إنشاء حساب
-          </h1>
+          <h1 className="mt-8 text-3xl font-black">إنشاء حساب</h1>
 
           <input
             className="mt-6 w-full rounded-xl border p-3"
@@ -119,7 +99,6 @@ export default function RegisterPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             disabled={loading}
-            required
           />
 
           <input
@@ -129,7 +108,6 @@ export default function RegisterPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading}
-            required
           />
 
           <input
@@ -139,8 +117,6 @@ export default function RegisterPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
-            minLength={6}
-            required
           />
 
           <p className="mt-5 font-bold">نوع الحساب</p>
@@ -184,17 +160,12 @@ export default function RegisterPage() {
             disabled={loading}
             className="mt-5 w-full rounded-xl bg-[#211f1c] p-3 font-bold text-white disabled:opacity-50"
           >
-            {loading
-              ? "جاري إنشاء الحساب..."
-              : "إنشاء الحساب"}
+            {loading ? "جاري إنشاء الحساب..." : "إنشاء الحساب"}
           </button>
 
           <p className="mt-5 text-center text-sm">
             لديك حساب بالفعل؟{" "}
-            <Link
-              href="/login"
-              className="font-bold text-[#b87333]"
-            >
+            <Link href="/login" className="font-bold text-[#b87333]">
               تسجيل الدخول
             </Link>
           </p>
