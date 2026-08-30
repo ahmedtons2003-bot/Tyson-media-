@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
@@ -21,7 +21,6 @@ export default function RegisterPage() {
 
   async function handleRegister(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
     setMessage("");
 
     if (!name.trim() || !email.trim() || !password) {
@@ -68,7 +67,7 @@ export default function RegisterPage() {
 
       if (profileError) {
         setMessage(
-          "تم إنشاء الحساب، لكن لم يتم حفظ بيانات الملف الشخصي: " +
+          "تم إنشاء الحساب، لكن حدث خطأ في حفظ البيانات: " +
             profileError.message
         );
         return;
@@ -138,12 +137,12 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => setAccountType("customer")}
+              disabled={loading}
               className={`rounded-xl border p-3 font-bold ${
                 accountType === "customer"
                   ? "border-[#b87333] bg-[#b87333]/10"
                   : ""
               }`}
-              disabled={loading}
             >
               👤 عميل
             </button>
@@ -151,12 +150,12 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => setAccountType("provider")}
+              disabled={loading}
               className={`rounded-xl border p-3 font-bold ${
                 accountType === "provider"
                   ? "border-[#b87333] bg-[#b87333]/10"
                   : ""
               }`}
-              disabled={loading}
             >
               🏪 مقدم خدمة
             </button>
