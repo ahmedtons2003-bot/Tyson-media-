@@ -1,13 +1,8 @@
- "use client";
+"use client";
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -21,21 +16,31 @@ export default function RegisterPage() {
 
   async function handleRegister(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
     setMessage("");
-
-    if (!name.trim() || !email.trim() || !password) {
-      setMessage("من فضلك املأ جميع البيانات.");
-      return;
-    }
-
-    if (password.length < 6) {
-      setMessage("كلمة المرور يجب أن تكون 6 أحرف على الأقل.");
-      return;
-    }
-
     setLoading(true);
 
     try {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (!url || !key) {
+        setMessage("إعدادات Supabase غير موجودة في الموقع.");
+        return;
+      }
+
+      if (!name.trim() || !email.trim() || !password) {
+        setMessage("من فضلك املأ جميع البيانات.");
+        return;
+      }
+
+      if (password.length < 6) {
+        setMessage("كلمة المرور يجب أن تكون 6 أحرف على الأقل.");
+        return;
+      }
+
+      const supabase = createClient(url, key);
+
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -53,7 +58,7 @@ export default function RegisterPage() {
       }
 
       if (!data.user) {
-        setMessage("حدث خطأ أثناء إنشاء الحساب.");
+        setMessage("لم يتم إنشاء الحساب.");
         return;
       }
 
@@ -76,11 +81,12 @@ export default function RegisterPage() {
       if (data.session) {
         window.location.href =
           accountType === "provider" ? "/provider" : "/";
-      } else {
-        setMessage(
-          "تم إنشاء الحساب بنجاح. راجع بريدك الإلكتروني لتأكيد الحساب."
-        );
+        return;
       }
+
+      setMessage(
+        "تم إنشاء الحساب بنجاح. يمكنك الآن تسجيل الدخول."
+      );
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -103,7 +109,9 @@ export default function RegisterPage() {
             Tyson <span className="text-[#b87333]">Media</span>
           </Link>
 
-          <h1 className="mt-8 text-3xl font-black">إنشاء حساب</h1>
+          <h1 className="mt-8 text-3xl font-black">
+            إنشاء حساب
+          </h1>
 
           <input
             className="mt-6 w-full rounded-xl border p-3"
@@ -111,6 +119,7 @@ export default function RegisterPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             disabled={loading}
+            required
           />
 
           <input
@@ -120,6 +129,7 @@ export default function RegisterPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading}
+            required
           />
 
           <input
@@ -129,6 +139,8 @@ export default function RegisterPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
+            minLength={6}
+            required
           />
 
           <p className="mt-5 font-bold">نوع الحساب</p>
@@ -172,12 +184,17 @@ export default function RegisterPage() {
             disabled={loading}
             className="mt-5 w-full rounded-xl bg-[#211f1c] p-3 font-bold text-white disabled:opacity-50"
           >
-            {loading ? "جاري إنشاء الحساب..." : "إنشاء الحساب"}
+            {loading
+              ? "جاري إنشاء الحساب..."
+              : "إنشاء الحساب"}
           </button>
 
           <p className="mt-5 text-center text-sm">
             لديك حساب بالفعل؟{" "}
-            <Link href="/login" className="font-bold text-[#b87333]">
+            <Link
+              href="/login"
+              className="font-bold text-[#b87333]"
+            >
               تسجيل الدخول
             </Link>
           </p>
