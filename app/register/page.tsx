@@ -1,10 +1,105 @@
+"use client";
+
 import Link from "next/link";
+import { FormEvent, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export default function RegisterPage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [accountType, setAccountType] = useState<"customer" | "provider">(
+    "customer"
+  );
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function handleRegister(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    setMessage("");
+
+    if (!name.trim() || !email.trim() || !password) {
+      setMessage("من فضلك املأ جميع البيانات.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setMessage("كلمة المرور يجب أن تكون 6 أحرف على الأقل.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            name: name.trim(),
+            account_type: accountType,
+          },
+        },
+      });
+
+      if (error) {
+        setMessage(error.message);
+        return;
+      }
+
+      if (!data.user) {
+        setMessage("حدث خطأ أثناء إنشاء الحساب.");
+        return;
+      }
+
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert({
+          id: data.user.id,
+          name: name.trim(),
+          account_type: accountType,
+        });
+
+      if (profileError) {
+        setMessage(
+          "تم إنشاء الحساب، لكن لم يتم حفظ بيانات الملف الشخصي: " +
+            profileError.message
+        );
+        return;
+      }
+
+      if (data.session) {
+        window.location.href =
+          accountType === "provider" ? "/provider" : "/";
+      } else {
+        setMessage(
+          "تم إنشاء الحساب بنجاح. راجع بريدك الإلكتروني لتأكيد الحساب."
+        );
+      }
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "حدث خطأ غير متوقع."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <main dir="rtl" className="min-h-screen bg-[#fbfaf7]">
       <div className="mx-auto flex min-h-screen max-w-md items-center px-4 py-10">
-        <div className="w-full rounded-3xl border bg-white p-7 shadow-sm">
+        <form
+          onSubmit={handleRegister}
+          className="w-full rounded-3xl border bg-white p-7 shadow-sm"
+        >
           <Link href="/" className="text-2xl font-black">
             Tyson <span className="text-[#b87333]">Media</span>
           </Link>
@@ -14,34 +109,71 @@ export default function RegisterPage() {
           <input
             className="mt-6 w-full rounded-xl border p-3"
             placeholder="الاسم"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={loading}
           />
 
           <input
             className="mt-3 w-full rounded-xl border p-3"
             type="email"
             placeholder="البريد الإلكتروني"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
           />
 
           <input
             className="mt-3 w-full rounded-xl border p-3"
             type="password"
             placeholder="كلمة المرور"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
           />
 
           <p className="mt-5 font-bold">نوع الحساب</p>
 
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <button className="rounded-xl border p-3 font-bold">
+            <button
+              type="button"
+              onClick={() => setAccountType("customer")}
+              className={`rounded-xl border p-3 font-bold ${
+                accountType === "customer"
+                  ? "border-[#b87333] bg-[#b87333]/10"
+                  : ""
+              }`}
+              disabled={loading}
+            >
               👤 عميل
             </button>
 
-            <button className="rounded-xl border p-3 font-bold">
+            <button
+              type="button"
+              onClick={() => setAccountType("provider")}
+              className={`rounded-xl border p-3 font-bold ${
+                accountType === "provider"
+                  ? "border-[#b87333] bg-[#b87333]/10"
+                  : ""
+              }`}
+              disabled={loading}
+            >
               🏪 مقدم خدمة
             </button>
           </div>
 
-          <button className="mt-5 w-full rounded-xl bg-[#211f1c] p-3 font-bold text-white">
-            إنشاء الحساب
+          {message && (
+            <div className="mt-4 rounded-xl bg-gray-100 p-3 text-sm font-bold">
+              {message}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-5 w-full rounded-xl bg-[#211f1c] p-3 font-bold text-white disabled:opacity-50"
+          >
+            {loading ? "جاري إنشاء الحساب..." : "إنشاء الحساب"}
           </button>
 
           <p className="mt-5 text-center text-sm">
@@ -50,7 +182,7 @@ export default function RegisterPage() {
               تسجيل الدخول
             </Link>
           </p>
-        </div>
+        </form>
       </div>
     </main>
   );
