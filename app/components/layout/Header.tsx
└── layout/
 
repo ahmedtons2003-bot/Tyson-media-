@@ -1,0 +1,119 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+
+const navItems = [
+  { label: "الرئيسية", href: "/" },
+  { label: "التصوير", href: "/photography" },
+  { label: "Handmade", href: "/handmade" },
+  { label: "السيارات", href: "/cars" },
+  { label: "الفساتين", href: "/dresses" },
+  { label: "البدل", href: "/suits" },
+  { label: "الجمال", href: "/beauty" },
+  { label: "القاعات", href: "/venues" },
+  { label: "الديكور", href: "/decor" },
+];
+
+export default function Header() {
+  const [mobileMenu, setMobileMenu] = useState(false);
+
+  return (
+    <header
+      dir="rtl"
+      className="sticky top-0 z-50 border-b border-black/5 bg-white/90 backdrop-blur-xl"
+    >
+      <div className="mx-auto max-w-7xl px-4">
+        <div className="flex h-16 items-center justify-between gap-3">
+          <Link
+            href="/"
+            className="shrink-0 text-xl font-black tracking-tight md:text-2xl"
+          >
+            Tyson{" "}
+            <span className="text-[#b87333]">
+              Media
+            </span>
+          </Link>
+
+          <nav className="hidden items-center gap-5 lg:flex">
+            {navItems.slice(1, 6).map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-sm font-bold text-[#635d56] transition hover:text-[#b87333]"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="hidden flex-1 justify-center px-4 xl:flex">
+            <Link
+              href="/"
+              className="w-full max-w-xs rounded-xl bg-[#f5f3f0] px-4 py-2 text-center text-sm font-bold text-[#8b837a] transition hover:bg-[#eee9e3]"
+            >
+              🔎 ابحث في Tyson Media
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href="/cart"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-black/10 bg-white transition hover:bg-[#f7f4f0]"
+              aria-label="السلة"
+            >
+              🛒
+            </Link>
+
+            <Link
+              href="/login"
+              className="hidden rounded-xl bg-[#211f1c] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[#b87333] sm:block"
+            >
+              دخول
+            </Link>
+
+            <button
+              type="button"
+              onClick={() =>
+                setMobileMenu(!mobileMenu)
+              }
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-black/10 bg-white text-lg lg:hidden"
+              aria-label="القائمة"
+            >
+              ☰
+            </button>
+          </div>
+        </div>
+
+        {mobileMenu && (
+          <div className="border-t border-black/5 py-4 lg:hidden">
+            <div className="grid grid-cols-2 gap-2">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() =>
+                    setMobileMenu(false)
+                  }
+                  className="rounded-xl bg-[#f7f5f2] px-4 py-3 text-sm font-black text-[#211f1c] transition hover:bg-[#eee6dc]"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+
+            <Link
+              href="/login"
+              onClick={() =>
+                setMobileMenu(false)
+              }
+              className="mt-3 block rounded-xl bg-[#211f1c] px-4 py-3 text-center font-black text-white sm:hidden"
+            >
+              تسجيل الدخول
+            </Link>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}
