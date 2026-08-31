@@ -1,6 +1,115 @@
+
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+type Booking = {
+  id: string;
+  booking_code: string;
+  booking_date: string;
+  booking_time: string;
+  customer_name: string;
+  event_type: string;
+  status?: string | null;
+  service?: {
+    title: string;
+  } | null;
+};
 
 export default function DashboardPage() {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState("");
+
+  useEffect(() => {
+    async function loadDashboard() {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (!url || !key) {
+        setLoading(false);
+        return;
+      }
+
+      const supabase = createClient(url, key);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        window.location.href = "/login";
+        return;
+      }
+
+      setUserEmail(user.email || "");
+
+      const { data, error } = await supabase
+        .from("bookings")
+        .select(`
+          id,
+          booking_code,
+          booking_date,
+          booking_time,
+          customer_name,
+          event_type,
+          status,
+          service:services (
+            title
+          )
+        `)
+        .eq("customer_id", user.id)
+        .order("booking_date", { ascending: true });
+
+      if (!error && data) {
+        setBookings(data as unknown as Booking[]);
+      }
+
+      setLoading(false);
+    }
+
+    loadDashboard();
+  }, []);
+
+  function statusText(status?: string | null) {
+    switch (status) {
+      case "confirmed":
+        return "مؤكد";
+      case "cancelled":
+        return "ملغي";
+      case "completed":
+        return "مكتمل";
+      default:
+        return "قيد المراجعة";
+    }
+  }
+
+  function statusClass(status?: string | null) {
+    switch (status) {
+      case "confirmed":
+        return "bg-green-100 text-green-700";
+      case "cancelled":
+        return "bg-red-100 text-red-700";
+      case "completed":
+        return "bg-blue-100 text-blue-700";
+      default:
+        return "bg-yellow-100 text-yellow-700";
+    }
+  }
+
+  function formatDate(date: string) {
+    return new Date(`${date}T00:00:00`).toLocaleDateString(
+      "ar-EG",
+      {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }
+    );
+  }
+
   return (
     <main dir="rtl" className="min-h-screen bg-[#fbfaf7]">
       <header className="border-b bg-white px-4 py-5">
@@ -29,7 +138,7 @@ export default function DashboardPage() {
           </h1>
 
           <p className="mt-2 opacity-70">
-            تابع حجوزاتك وطلباتك من مكان واحد.
+            {userEmail || "تابع حجوزاتك وطلباتك من مكان واحد."}
           </p>
         </div>
 
@@ -38,8 +147,9 @@ export default function DashboardPage() {
             <p className="text-sm text-[#746f68]">
               الحجوزات
             </p>
+
             <p className="mt-2 text-3xl font-black">
-              2
+              {loading ? "..." : bookings.length}
             </p>
           </div>
 
@@ -47,8 +157,9 @@ export default function DashboardPage() {
             <p className="text-sm text-[#746f68]">
               الطلبات
             </p>
+
             <p className="mt-2 text-3xl font-black">
-              3
+              0
             </p>
           </div>
 
@@ -56,96 +167,74 @@ export default function DashboardPage() {
             <p className="text-sm text-[#746f68]">
               المفضلة
             </p>
+
             <p className="mt-2 text-3xl font-black">
-              5
+              0
             </p>
           </div>
         </div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
-          <div className="rounded-3xl border bg-white p-6">
-            <h2 className="text-xl font-black">
-              📸 آخر الحجوزات
-            </h2>
+        <div className="mt-8 rounded-3xl border bg-white p-6">
+          <h2 className="text-xl font-black">
+            📸 حجوزاتي
+          </h2>
 
-            <div className="mt-5 space-y-4">
-              <div className="rounded-2xl bg-[#fbfaf7] p-4">
-                <div className="flex justify-between">
-                  <div>
-                    <p className="font-bold">
-                      تصوير مناسبة
-                    </p>
-                    <p className="mt-1 text-sm text-[#746f68]">
-                      15 سبتمبر 2026
-                    </p>
-                  </div>
-
-                  <span className="h-fit rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
-                    مؤكد
-                  </span>
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-[#fbfaf7] p-4">
-                <div className="flex justify-between">
-                  <div>
-                    <p className="font-bold">
-                      جلسة بورتريه
-                    </p>
-                    <p className="mt-1 text-sm text-[#746f68]">
-                      20 سبتمبر 2026
-                    </p>
-                  </div>
-
-                  <span className="h-fit rounded-full bg-yellow-100 px-3 py-1 text-xs font-bold text-yellow-700">
-                    قيد المراجعة
-                  </span>
-                </div>
-              </div>
+          {loading ? (
+            <div className="mt-5 rounded-2xl bg-[#fbfaf7] p-6 text-center font-bold">
+              جاري تحميل الحجوزات...
             </div>
-          </div>
+          ) : bookings.length === 0 ? (
+            <div className="mt-5 rounded-2xl bg-[#fbfaf7] p-6 text-center">
+              <p className="font-bold">
+                لا توجد حجوزات حتى الآن.
+              </p>
 
-          <div className="rounded-3xl border bg-white p-6">
-            <h2 className="text-xl font-black">
-              🛍️ آخر الطلبات
-            </h2>
-
-            <div className="mt-5 space-y-4">
-              <div className="rounded-2xl bg-[#fbfaf7] p-4">
-                <div className="flex justify-between">
-                  <div>
-                    <p className="font-bold">
-                      شنطة هاند ميد
-                    </p>
-                    <p className="mt-1 text-sm text-[#746f68]">
-                      900 ج.م
-                    </p>
-                  </div>
-
-                  <span className="h-fit rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
-                    قيد التجهيز
-                  </span>
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-[#fbfaf7] p-4">
-                <div className="flex justify-between">
-                  <div>
-                    <p className="font-bold">
-                      باقة ورد
-                    </p>
-                    <p className="mt-1 text-sm text-[#746f68]">
-                      650 ج.م
-                    </p>
-                  </div>
-
-                  <span className="h-fit rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
-                    تم التسليم
-                  </span>
-                </div>
-              </div>
+              <Link
+                href="/photography"
+                className="mt-4 inline-block rounded-xl bg-[#211f1c] px-5 py-3 font-bold text-white"
+              >
+                استكشف خدمات التصوير
+              </Link>
             </div>
-          </div>
+          ) : (
+            <div className="mt-5 space-y-4">
+              {bookings.map((booking) => (
+                <div
+                  key={booking.id}
+                  className="rounded-2xl bg-[#fbfaf7] p-4"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="font-bold">
+                        {booking.service?.title ||
+                          "خدمة تصوير"}
+                      </p>
+
+                      <p className="mt-1 text-sm text-[#746f68]">
+                        📅 {formatDate(booking.booking_date)}
+                      </p>
+
+                      <p className="mt-1 text-sm text-[#746f68]">
+                        🕐 {booking.booking_time}
+                      </p>
+
+                      <p className="mt-1 text-xs text-[#746f68]">
+                        رقم الحجز: {booking.booking_code}
+                      </p>
+                    </div>
+
+                    <span
+                      className={`h-fit w-fit rounded-full px-3 py-1 text-xs font-bold ${statusClass(
+                        booking.status
+                      )}`}
+                    >
+                      {statusText(booking.status)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <Link
