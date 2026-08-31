@@ -1,551 +1,374 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 
-type Category = {
-  id: string;
-  name: string;
-  slug: string;
-  category_type: string;
-  image_url: string | null;
-};
+const categories = [
+{
+title: "التصوير",
+subtitle: "أفراح • خطوبة • جلسات",
+icon: "📸",
+href: "/photography",
+},
+{
+title: "Handmade",
+subtitle: "شنط • خواتم • إكسسوارات",
+icon: "🧶",
+href: "/handmade",
+},
+{
+title: "السيارات",
+subtitle: "زينة • ديكور • تجهيز",
+icon: "🚗",
+href: "/cars",
+},
+{
+title: "الفساتين",
+subtitle: "فساتين أفراح ومناسبات",
+icon: "👗",
+href: "/dresses",
+},
+{
+title: "البدل",
+subtitle: "بدل رجالي • إكسسوارات",
+icon: "🤵",
+href: "/suits",
+},
+{
+title: "المكياج والجمال",
+subtitle: "ميكاب • شعر • كوافير",
+icon: "💄",
+href: "/beauty",
+},
+{
+title: "القاعات والمناسبات",
+subtitle: "قاعات • أماكن مناسبات",
+icon: "🏛️",
+href: "/venues",
+},
+{
+title: "الديكور والدعوات",
+subtitle: "ديكور • دعوات • توزيعات",
+icon: "🎀",
+href: "/decor",
+},
+];
 
-type Service = {
-  id: string;
-  title: string;
-  description: string | null;
-  price: number;
-  image_url: string | null;
-  provider?: {
-    business_name: string;
-    city: string | null;
-  } | null;
-};
+const features = [
+{
+icon: "🔎",
+title: "اختار اللي يناسبك",
+text: "قارن بين الخدمات والمنتجات والأسعار بسهولة.",
+},
+{
+icon: "⭐",
+title: "تقييمات حقيقية",
+text: "شوف تقييمات العملاء قبل ما تختار.",
+},
+{
+icon: "📍",
+title: "حسب محافظتك",
+text: "اكتشف مقدمي الخدمات والبائعين القريبين منك.",
+},
+{
+icon: "🛒",
+title: "شراء وحجز",
+text: "اشتري المنتجات واحجز الخدمات من مكان واحد.",
+},
+];
 
 export default function HomePage() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+return (
+<main
+dir="rtl"
+className="min-h-screen bg-[#f7f7f7] text-[#211f1c]"
+>
+{/* Header */}
+<header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur">
+<div className="mx-auto max-w-7xl px-4">
+<div className="flex h-16 items-center justify-between gap-4">
+<Link
+href="/"
+className="shrink-0 text-2xl font-black tracking-tight"
+>
+Tyson{" "}
+<span className="text-[#b87333]">
+Media
+</span>
+</Link>
 
-  useEffect(() => {
-    async function loadHome() {
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        <div className="hidden flex-1 md:block md:max-w-xl">
+          <div className="relative">
+            <input
+              placeholder="ابحث عن خدمة، منتج، مصور، قاعة..."
+              className="w-full rounded-2xl border bg-[#f6f5f3] px-5 py-3 pr-12 text-sm font-bold outline-none transition focus:border-[#b87333]"
+            />
 
-      if (!url || !key) {
-        setError("إعدادات Supabase غير موجودة.");
-        setLoading(false);
-        return;
-      }
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg">
+              🔎
+            </span>
+          </div>
+        </div>
 
-      const supabase = createClient(url, key);
-
-      const [categoriesResult, servicesResult] =
-        await Promise.all([
-          supabase
-            .from("categories")
-            .select(`
-              id,
-              name,
-              slug,
-              category_type,
-              image_url
-            `)
-            .order("created_at", {
-              ascending: false,
-            }),
-
-          supabase
-            .from("services")
-            .select(`
-              id,
-              title,
-              description,
-              price,
-              image_url,
-              provider:providers (
-                business_name,
-                city
-              )
-            `)
-            .eq("is_active", true)
-            .order("created_at", {
-              ascending: false,
-            })
-            .limit(6),
-        ]);
-
-      if (categoriesResult.error) {
-        setError(
-          "حدث خطأ أثناء تحميل الأقسام: " +
-            categoriesResult.error.message
-        );
-      } else {
-        setCategories(
-          (categoriesResult.data || []) as Category[]
-        );
-      }
-
-      if (servicesResult.error) {
-        setError(
-          "حدث خطأ أثناء تحميل الخدمات: " +
-            servicesResult.error.message
-        );
-      } else {
-        setServices(
-          (servicesResult.data || []) as unknown as Service[]
-        );
-      }
-
-      setLoading(false);
-    }
-
-    loadHome();
-  }, []);
-
-  function categoryLink(category: Category) {
-    const slug = category.slug?.toLowerCase().trim() || "";
-    const name = category.name?.toLowerCase().trim() || "";
-
-    if (
-      slug === "drone" ||
-      name.includes("درون")
-    ) {
-      return "/photography?category=drone";
-    }
-
-    if (
-      slug === "photography-quality" ||
-      name.includes("جودة")
-    ) {
-      return "/photography?category=video";
-    }
-
-    if (
-      slug.includes("photo") ||
-      slug.includes("photography") ||
-      slug.includes("تصوير") ||
-      name.includes("تصوير")
-    ) {
-      return "/photography";
-    }
-
-    if (
-      slug.includes("hand") ||
-      slug.includes("handmade") ||
-      slug.includes("هاند") ||
-      slug.includes("صناعات") ||
-      name.includes("هاند")
-    ) {
-      return "/handmade";
-    }
-
-    return `/category/${category.slug}`;
-  }
-
-  return (
-    <main
-      dir="rtl"
-      className="min-h-screen bg-[#fbfaf7] text-[#211f1c]"
-    >
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
+        <div className="flex items-center gap-2">
           <Link
-            href="/"
-            className="text-2xl font-black tracking-tight"
+            href="/cart"
+            className="rounded-xl border px-3 py-2 text-sm font-black"
           >
+            🛒
+          </Link>
+
+          <Link
+            href="/login"
+            className="rounded-xl bg-[#211f1c] px-4 py-2.5 text-sm font-black text-white"
+          >
+            دخول
+          </Link>
+        </div>
+      </div>
+
+      <div className="pb-3 md:hidden">
+        <div className="relative">
+          <input
+            placeholder="ابحث عن خدمة أو منتج..."
+            className="w-full rounded-xl border bg-[#f6f5f3] p-3 pr-11 text-sm font-bold outline-none focus:border-[#b87333]"
+          />
+
+          <span className="absolute right-4 top-1/2 -translate-y-1/2">
+            🔎
+          </span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  {/* Hero */}
+  <section className="mx-auto max-w-7xl px-4 py-5 md:py-8">
+    <div className="relative overflow-hidden rounded-[2rem] bg-[#211f1c] px-6 py-12 text-white md:px-12 md:py-20">
+      <div className="relative z-10 max-w-3xl">
+        <span className="inline-flex rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-black tracking-wide text-[#e2b783]">
+          TYSON MEDIA • EVENTS MARKETPLACE
+        </span>
+
+        <h1 className="mt-5 text-4xl font-black leading-tight md:text-6xl">
+          كل احتياجات مناسبتك
+          <br />
+          <span className="text-[#d6a66f]">
+            في مكان واحد
+          </span>
+        </h1>
+
+        <p className="mt-5 max-w-2xl text-sm leading-7 text-white/65 md:text-lg">
+          احجز خدماتك، اكتشف المنتجات،
+          وقارن بين مقدمي الخدمات والبائعين
+          بسهولة من خلال Tyson Media.
+        </p>
+
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <Link
+            href="#categories"
+            className="rounded-xl bg-[#b87333] px-7 py-4 text-center font-black text-white transition hover:bg-[#9d612c]"
+          >
+            اكتشف الأقسام
+          </Link>
+
+          <Link
+            href="/register"
+            className="rounded-xl border border-white/15 bg-white/5 px-7 py-4 text-center font-black text-white transition hover:bg-white/10"
+          >
+            ابدأ الآن
+          </Link>
+        </div>
+      </div>
+
+      <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-[#b87333]/15 blur-3xl" />
+      <div className="absolute -bottom-32 right-1/3 h-72 w-72 rounded-full bg-white/5 blur-3xl" />
+    </div>
+  </section>
+
+  {/* Categories */}
+  <section
+    id="categories"
+    className="mx-auto max-w-7xl px-4 py-8"
+  >
+    <div className="mb-6">
+      <p className="text-sm font-black text-[#b87333]">
+        EXPLORE
+      </p>
+
+      <h2 className="mt-1 text-3xl font-black">
+        اكتشف أقسام المنصة
+      </h2>
+
+      <p className="mt-2 text-sm text-gray-500">
+        كل قسم مستقل بتخصصاته ومنتجاته وخدماته.
+      </p>
+    </div>
+
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+      {categories.map((category) => (
+        <Link
+          key={category.title}
+          href={category.href}
+          className="group rounded-3xl border bg-white p-5 transition duration-200 hover:-translate-y-1 hover:shadow-xl"
+        >
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f1ebe5] text-3xl transition group-hover:scale-105">
+            {category.icon}
+          </div>
+
+          <h3 className="mt-5 text-lg font-black">
+            {category.title}
+          </h3>
+
+          <p className="mt-2 text-xs leading-5 text-gray-500">
+            {category.subtitle}
+          </p>
+
+          <div className="mt-5 text-sm font-black text-[#b87333]">
+            استكشف القسم ←
+          </div>
+        </Link>
+      ))}
+    </div>
+  </section>
+
+  {/* Handmade Highlight */}
+  <section className="mx-auto max-w-7xl px-4 py-6">
+    <div className="grid overflow-hidden rounded-[2rem] bg-[#eee6dc] md:grid-cols-2">
+      <div className="flex min-h-[300px] items-center justify-center bg-[#e4d8ca] text-9xl">
+        🧶
+      </div>
+
+      <div className="p-8 md:p-12">
+        <p className="text-sm font-black text-[#b87333]">
+          TYSON MARKET
+        </p>
+
+        <h2 className="mt-3 text-3xl font-black md:text-4xl">
+          Handmade
+          <br />
+          له عالمه الخاص
+        </h2>
+
+        <p className="mt-4 leading-7 text-gray-600">
+          شنط، خواتم، انسيالات، سلاسل،
+          إكسسوارات، كروشيه، تطريز،
+          هدايا وديكورات من بائعين مختلفين.
+        </p>
+
+        <Link
+          href="/handmade"
+          className="mt-7 inline-block rounded-xl bg-[#211f1c] px-7 py-4 font-black text-white"
+        >
+          دخول متجر Handmade
+        </Link>
+      </div>
+    </div>
+  </section>
+
+  {/* Features */}
+  <section className="mx-auto max-w-7xl px-4 py-10">
+    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+      {features.map((feature) => (
+        <div
+          key={feature.title}
+          className="rounded-2xl border bg-white p-5"
+        >
+          <div className="text-3xl">
+            {feature.icon}
+          </div>
+
+          <h3 className="mt-4 font-black">
+            {feature.title}
+          </h3>
+
+          <p className="mt-2 text-sm leading-6 text-gray-500">
+            {feature.text}
+          </p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  {/* Providers */}
+  <section className="mx-auto max-w-7xl px-4 py-6">
+    <div className="rounded-[2rem] bg-[#211f1c] p-8 text-white md:p-12">
+      <div className="grid gap-8 md:grid-cols-2 md:items-center">
+        <div>
+          <p className="text-sm font-black text-[#d6a66f]">
+            FOR PROVIDERS & SELLERS
+          </p>
+
+          <h2 className="mt-3 text-3xl font-black md:text-4xl">
+            عندك خدمة أو منتج؟
+          </h2>
+
+          <p className="mt-4 max-w-xl leading-7 text-white/60">
+            اعرض خدماتك ومنتجاتك على Tyson Media
+            ووصل لعملاء جدد من مختلف محافظات مصر.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row md:justify-end">
+          <Link
+            href="/register"
+            className="rounded-xl bg-[#b87333] px-7 py-4 text-center font-black"
+          >
+            إنشاء حساب
+          </Link>
+
+          <Link
+            href="/provider-dashboard"
+            className="rounded-xl border border-white/10 px-7 py-4 text-center font-black"
+          >
+            لوحة مقدم الخدمة
+          </Link>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* Footer */}
+  <footer className="mt-12 border-t bg-white">
+    <div className="mx-auto max-w-7xl px-4 py-8">
+      <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div>
+          <div className="text-xl font-black">
             Tyson{" "}
             <span className="text-[#b87333]">
               Media
             </span>
-          </Link>
-
-          <nav className="hidden items-center gap-6 md:flex">
-            <Link
-              href="/"
-              className="text-sm font-bold text-[#b87333]"
-            >
-              الرئيسية
-            </Link>
-
-            <Link
-              href="/photography"
-              className="text-sm font-bold hover:text-[#b87333]"
-            >
-              التصوير
-            </Link>
-
-            <Link
-              href="/handmade"
-              className="text-sm font-bold hover:text-[#b87333]"
-            >
-              هاند ميد
-            </Link>
-
-            <Link
-              href="/dashboard"
-              className="text-sm font-bold hover:text-[#b87333]"
-            >
-              حجوزاتي
-            </Link>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <Link
-              href="/login"
-              className="rounded-xl border px-4 py-2 text-sm font-bold"
-            >
-              دخول
-            </Link>
-
-            <Link
-              href="/register"
-              className="rounded-xl bg-[#211f1c] px-4 py-2 text-sm font-bold text-white"
-            >
-              إنشاء حساب
-            </Link>
           </div>
-        </div>
-      </header>
 
-      {/* Hero */}
-      <section className="px-4 py-8 md:py-12">
-        <div className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-[#211f1c] px-6 py-14 text-white md:px-12 md:py-20">
-          <div className="max-w-3xl">
-            <div className="mb-5 inline-flex rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-bold">
-              ✨ كل خدمات مناسبتك في مكان واحد
-            </div>
-
-            <h1 className="text-4xl font-black leading-tight md:text-6xl">
-              خطط مناسبتك
-              <br />
-              <span className="text-[#d99b63]">
-                بسهولة مع Tyson Media
-              </span>
-            </h1>
-
-            <p className="mt-6 max-w-2xl text-base leading-8 text-white/65 md:text-lg">
-              اكتشف المصورين ومقدمي الخدمات والمنتجات
-              المناسبة للأفراح والمناسبات واحجز الخدمة
-              التي تناسبك بسهولة.
-            </p>
-
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/photography"
-                className="rounded-xl bg-[#b87333] px-7 py-4 text-center font-black text-white transition hover:bg-[#d08b4d]"
-              >
-                اكتشف خدمات التصوير 📸
-              </Link>
-
-              <Link
-                href="/handmade"
-                className="rounded-xl border border-white/15 bg-white/10 px-7 py-4 text-center font-black text-white"
-              >
-                اكتشف المنتجات 🎁
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Categories */}
-      <section className="mx-auto max-w-7xl px-4 py-8">
-        <div className="mb-6">
-          <p className="text-sm font-black text-[#b87333]">
-            EXPLORE
-          </p>
-
-          <h2 className="mt-2 text-3xl font-black">
-            اكتشف الأقسام
-          </h2>
-
-          <p className="mt-2 text-sm text-[#746f68]">
-            اختار القسم المناسب لمناسبتك
+          <p className="mt-2 text-sm text-gray-500">
+            منصتك لاكتشاف وحجز خدمات ومنتجات المناسبات.
           </p>
         </div>
 
-        {loading ? (
-          <div className="rounded-2xl border bg-white p-8 text-center font-bold">
-            جاري تحميل الأقسام...
-          </div>
-        ) : categories.length === 0 ? (
-          <div className="rounded-2xl border bg-white p-8 text-center text-sm font-bold">
-            لا توجد أقسام متاحة حاليًا.
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {categories.map((category) => (
-              <Link
-                key={category.id}
-                href={categoryLink(category)}
-                className="group overflow-hidden rounded-3xl border bg-white transition hover:-translate-y-1 hover:shadow-lg"
-              >
-                <div className="flex h-36 items-center justify-center overflow-hidden bg-[#eee6dc] text-5xl">
-                  {category.image_url ? (
-                    <img
-                      src={category.image_url}
-                      alt={category.name}
-                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                    />
-                  ) : (
-                    "✨"
-                  )}
-                </div>
-
-                <div className="p-4">
-                  <h3 className="font-black">
-                    {category.name}
-                  </h3>
-
-                  <p className="mt-1 text-xs text-[#746f68]">
-                    اكتشف الخدمات
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Main Services */}
-      <section className="mx-auto max-w-7xl px-4 py-10">
-        <div className="mb-6 flex items-end justify-between gap-4">
-          <div>
-            <p className="text-sm font-black text-[#b87333]">
-              SERVICES
-            </p>
-
-            <h2 className="mt-2 text-3xl font-black">
-              أحدث الخدمات
-            </h2>
-
-            <p className="mt-2 text-sm text-[#746f68]">
-              خدمات مقدمي الخدمة على المنصة
-            </p>
-          </div>
-
-          <Link
-            href="/photography"
-            className="hidden rounded-xl bg-[#211f1c] px-5 py-3 text-sm font-black text-white sm:block"
-          >
-            عرض الكل
-          </Link>
-        </div>
-
-        {loading ? (
-          <div className="rounded-2xl border bg-white p-8 text-center font-bold">
-            جاري تحميل الخدمات...
-          </div>
-        ) : services.length === 0 ? (
-          <div className="rounded-2xl border bg-white p-8 text-center font-bold">
-            لا توجد خدمات متاحة حاليًا.
-          </div>
-        ) : (
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {services.map((service) => (
-              <article
-                key={service.id}
-                className="overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-              >
-                <div className="flex h-48 items-center justify-center overflow-hidden bg-[#eee6dc] text-6xl">
-                  {service.image_url ? (
-                    <img
-                      src={service.image_url}
-                      alt={service.title}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    "📸"
-                  )}
-                </div>
-
-                <div className="p-5">
-                  <p className="text-sm font-bold text-[#b87333]">
-                    ⭐ خدمة مميزة
-                  </p>
-
-                  <h3 className="mt-2 text-xl font-black">
-                    {service.title}
-                  </h3>
-
-                  <p className="mt-2 min-h-12 text-sm leading-6 text-[#746f68]">
-                    {service.description ||
-                      "خدمة احترافية مقدمة من أحد مقدمي الخدمات على Tyson Media."}
-                  </p>
-
-                  <div className="mt-4 space-y-2 text-sm text-[#746f68]">
-                    {service.provider?.business_name && (
-                      <p>
-                        🏪{" "}
-                        <span className="font-bold text-[#211f1c]">
-                          {service.provider.business_name}
-                        </span>
-                      </p>
-                    )}
-
-                    {service.provider?.city && (
-                      <p>
-                        📍 {service.provider.city}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="mt-5 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs text-[#746f68]">
-                        السعر يبدأ من
-                      </p>
-
-                      <p className="text-xl font-black">
-                        {Number(
-                          service.price || 0
-                        ).toLocaleString("ar-EG")}{" "}
-                        ج.م
-                      </p>
-                    </div>
-
-                    <Link
-                      href={`/bookings?service=${service.id}`}
-                      className="rounded-xl bg-[#211f1c] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b87333]"
-                    >
-                      احجز الآن
-                    </Link>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-
-        <Link
-          href="/photography"
-          className="mt-5 block rounded-xl bg-[#211f1c] px-5 py-3 text-center text-sm font-black text-white sm:hidden"
-        >
-          عرض جميع الخدمات
-        </Link>
-      </section>
-
-      {/* Handmade */}
-      <section className="mx-auto max-w-7xl px-4 py-10">
-        <div className="grid gap-5 md:grid-cols-2">
-          <Link
-            href="/handmade"
-            className="group rounded-3xl bg-[#e9ddd0] p-7 transition hover:-translate-y-1"
-          >
-            <div className="text-5xl">🎁</div>
-
-            <h2 className="mt-5 text-2xl font-black">
-              هاند ميد وهدايا
-            </h2>
-
-            <p className="mt-3 text-sm leading-7 text-[#746f68]">
-              هدايا ومنتجات يدوية وإكسسوارات مناسبة
-              للأفراح والمناسبات.
-            </p>
-
-            <span className="mt-5 inline-block font-black text-[#b87333]">
-              اكتشف المنتجات ←
-            </span>
+        <div className="flex flex-wrap gap-4 text-sm font-bold text-gray-600">
+          <Link href="/photography">
+            التصوير
           </Link>
 
-          <Link
-            href="/photography"
-            className="group rounded-3xl bg-[#211f1c] p-7 text-white transition hover:-translate-y-1"
-          >
-            <div className="text-5xl">📸</div>
+          <Link href="/handmade">
+            Handmade
+          </Link>
 
-            <h2 className="mt-5 text-2xl font-black">
-              التصوير والمناسبات
-            </h2>
+          <Link href="/cars">
+            السيارات
+          </Link>
 
-            <p className="mt-3 text-sm leading-7 text-white/60">
-              احجز مصورك وخدمة التصوير المناسبة
-              لمناسبتك بسهولة.
-            </p>
-
-            <span className="mt-5 inline-block font-black text-[#d99b63]">
-              احجز الآن ←
-            </span>
+          <Link href="/dashboard">
+            حسابي
           </Link>
         </div>
-      </section>
+      </div>
 
-      {/* Provider CTA */}
-      <section className="mx-auto max-w-7xl px-4 py-10">
-        <div className="rounded-3xl border bg-white p-7 text-center md:p-10">
-          <div className="text-5xl">🏪</div>
+      <div className="mt-7 border-t pt-5 text-center text-xs text-gray-400">
+        © {new Date().getFullYear()} Tyson Media
+      </div>
+    </div>
+  </footer>
+</main>
 
-          <h2 className="mt-4 text-3xl font-black">
-            عندك خدمة أو مشروع؟
-          </h2>
-
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[#746f68]">
-            انضم إلى Tyson Media واعرض خدماتك ومنتجاتك
-            أمام العملاء واستقبل طلبات الحجز.
-          </p>
-
-          <Link
-            href="/register"
-            className="mt-6 inline-block rounded-xl bg-[#b87333] px-7 py-4 font-black text-white"
-          >
-            انضم كمقدم خدمة
-          </Link>
-        </div>
-      </section>
-
-      {/* Error */}
-      {error && (
-        <div className="mx-auto max-w-7xl px-4 pb-6">
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-center text-sm font-bold text-red-700">
-            {error}
-          </div>
-        </div>
-      )}
-
-      {/* Footer */}
-      <footer className="mt-10 bg-[#211f1c] px-4 py-10 text-white">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-2xl font-black">
-                Tyson{" "}
-                <span className="text-[#d99b63]">
-                  Media
-                </span>
-              </p>
-
-              <p className="mt-2 text-sm text-white/50">
-                منصتك لخدمات الأفراح والمناسبات.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-4 text-sm font-bold text-white/70">
-              <Link href="/">الرئيسية</Link>
-
-              <Link href="/photography">
-                التصوير
-              </Link>
-
-              <Link href="/handmade">
-                هاند ميد
-              </Link>
-
-              <Link href="/login">
-                تسجيل الدخول
-              </Link>
-            </div>
-          </div>
-
-          <div className="mt-8 border-t border-white/10 pt-6 text-center text-xs text-white/40">
-            © {new Date().getFullYear()} Tyson Media — جميع الحقوق محفوظة
-          </div>
-        </div>
-      </footer>
-    </main>
-  );
+);
 }
