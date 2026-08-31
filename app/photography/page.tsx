@@ -81,7 +81,6 @@ export default function PhotographyPage() {
 
   return (
     <main dir="rtl" className="min-h-screen bg-[#fbfaf7] text-[#211f1c]">
-      {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <Link href="/" className="text-2xl font-black">
@@ -97,7 +96,6 @@ export default function PhotographyPage() {
         </div>
       </header>
 
-      {/* Hero */}
       <section className="mx-auto max-w-6xl px-4 py-10">
         <div className="overflow-hidden rounded-[2rem] bg-[#211f1c] px-6 py-14 text-center text-white">
           <div className="text-6xl">📸</div>
@@ -117,7 +115,6 @@ export default function PhotographyPage() {
         </div>
       </section>
 
-      {/* Filters */}
       <section className="mx-auto max-w-6xl px-4">
         <div className="rounded-3xl border bg-white p-5">
           <div className="grid gap-4 md:grid-cols-2">
@@ -163,7 +160,6 @@ export default function PhotographyPage() {
         </div>
       </section>
 
-      {/* Categories */}
       <section className="mx-auto max-w-6xl px-4 py-10">
         <div className="mb-7">
           <p className="text-sm font-bold text-[#b87333]">
@@ -202,7 +198,6 @@ export default function PhotographyPage() {
         </div>
       </section>
 
-      {/* Video Quality */}
       {(selectedCategory === "الكل" ||
         selectedCategory === "تصوير فيديو") && (
         <section className="mx-auto max-w-6xl px-4 pb-10">
@@ -233,7 +228,6 @@ export default function PhotographyPage() {
         </section>
       )}
 
-      {/* Drone */}
       {(selectedCategory === "الكل" ||
         selectedCategory === "تصوير Drone") && (
         <section className="mx-auto max-w-6xl px-4 pb-10">
@@ -249,4 +243,34 @@ export default function PhotographyPage() {
               الأماكن السياحية والمشروعات.
             </p>
 
-            <
+            <Link
+              href="/bookings"
+              className="mt-6 inline-block rounded-xl bg-[#b87333] px-6 py-3 font-black text-white"
+            >
+              احجز خدمة التصوير
+            </Link>
+          </div>
+        </section>
+      )}
+
+      <section className="mx-auto max-w-6xl px-4 pb-16">
+        <div className="rounded-3xl border bg-white p-7 text-center">
+          <h2 className="text-2xl font-black">
+            جاهز تحجز؟
+          </h2>
+
+          <p className="mt-2 text-[#746f68]">
+            اختار الخدمة المناسبة وتواصل مع مقدم الخدمة.
+          </p>
+
+          <Link
+            href="/dashboard"
+            className="mt-5 inline-block rounded-xl bg-[#211f1c] px-6 py-3 font-black text-white"
+          >
+            لوحة التحكم
+          </Link>
+        </div>
+      </section>
+    </main>
+  );
+}
