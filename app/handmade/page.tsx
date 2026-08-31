@@ -4,32 +4,43 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-type Service = {
+type Product = {
 id: string;
-title: string;
+name: string;
 description: string | null;
 price: number;
-duration_minutes: number | null;
 image_url: string | null;
-provider_id: string;
-provider: {
-business_name: string;
-city: string | null;
-} | null;
+category_id: string | null;
 };
 
+const handmadeCategories = [
+{ name: "شنط هاند ميد", icon: "👜" },
+{ name: "خواتم", icon: "💍" },
+{ name: "انسيالات", icon: "📿" },
+{ name: "سلاسل", icon: "📿" },
+{ name: "إكسسوارات", icon: "✨" },
+{ name: "هدايا هاند ميد", icon: "🎁" },
+{ name: "تطريز", icon: "🧵" },
+{ name: "كروشيه", icon: "🧶" },
+{ name: "مكرمية", icon: "🪢" },
+{ name: "توزيعات مناسبات", icon: "🎀" },
+{ name: "ديكورات هاند ميد", icon: "🏠" },
+{ name: "شموع", icon: "🕯️" },
+];
+
 export default function HandmadePage() {
-const [services, setServices] = useState<Service[]>([]);
+const [products, setProducts] = useState<Product[]>([]);
 const [loading, setLoading] = useState(true);
-const [error, setError] = useState("");
+const [selectedCategory, setSelectedCategory] = useState("الكل");
+const [message, setMessage] = useState("");
 
 useEffect(() => {
-async function loadServices() {
+async function loadProducts() {
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
-    setError("إعدادات Supabase غير موجودة.");
+    setMessage("إعدادات Supabase غير موجودة.");
     setLoading(false);
     return;
   }
@@ -37,33 +48,22 @@ const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const supabase = createClient(url, key);
 
   const { data, error } = await supabase
-    .from("services")
-    .select(`
-      id,
-      title,
-      description,
-      price,
-      duration_minutes,
-      image_url,
-      provider_id,
-      provider:providers (
-        business_name,
-        city
-      )
-    `)
-    .eq("is_active", true)
+    .from("products")
+    .select(
+      "id, name, description, price, image_url, category_id"
+    )
     .order("created_at", { ascending: false });
 
   if (error) {
-    setError(error.message);
+    setMessage("حدث خطأ أثناء تحميل المنتجات: " + error.message);
   } else {
-    setServices((data as unknown as Service[]) || []);
+    setProducts((data || []) as Product[]);
   }
 
   setLoading(false);
 }
 
-loadServices();
+loadProducts();
 
 }, []);
 
@@ -72,16 +72,10 @@ return (
 dir="rtl"
 className="min-h-screen bg-[#fbfaf7] text-[#211f1c]"
 >
-<header className="border-b bg-white">
+<header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur">
 <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-<Link
-href="/"
-className="text-2xl font-black"
->
-Tyson{" "}
-<span className="text-[#b87333]">
-Media
-</span>
+<Link href="/" className="text-2xl font-black">
+Tyson <span className="text-[#b87333]">Media</span>
 </Link>
 
       <Link
@@ -94,137 +88,163 @@ Media
   </header>
 
   <section className="mx-auto max-w-6xl px-4 py-10">
-    <div className="rounded-[2rem] bg-[#211f1c] px-6 py-14 text-center text-white">
-      <div className="text-6xl">🎁</div>
+    <div className="rounded-[2rem] bg-[#211f1c] px-6 py-14 text-center text-white md:px-10">
+      <div className="text-6xl">🧶</div>
 
-      <h1 className="mt-5 text-4xl font-black md:text-5xl">
-        الهاند ميد والمنتجات
+      <p className="mt-5 text-sm font-bold tracking-wide text-[#d6a66f]">
+        TYSON MEDIA
+      </p>
+
+      <h1 className="mt-3 text-4xl font-black md:text-6xl">
+        هاند ميد ومنتجات مصنوعة بحب
       </h1>
 
-      <p className="mx-auto mt-4 max-w-2xl text-white/70">
-        اكتشف المنتجات اليدوية والهدايا والإكسسوارات
-        واختر ما يناسب مناسبتك.
+      <p className="mx-auto mt-5 max-w-2xl leading-8 text-white/70">
+        اكتشف الشنط والإكسسوارات والهدايا والمنتجات
+        المصنوعة يدويًا من مختلف مقدمي الخدمات والبائعين.
       </p>
     </div>
   </section>
 
+  <section className="mx-auto max-w-6xl px-4">
+    <div className="rounded-3xl border bg-white p-5">
+      <h2 className="text-xl font-black">
+        تصفح الأقسام
+      </h2>
+
+      <div className="mt-5 flex gap-3 overflow-x-auto pb-2">
+        <button
+          type="button"
+          onClick={() => setSelectedCategory("الكل")}
+          className={`whitespace-nowrap rounded-full px-5 py-3 text-sm font-black ${
+            selectedCategory === "الكل"
+              ? "bg-[#211f1c] text-white"
+              : "bg-[#eee6dc]"
+          }`}
+        >
+          كل المنتجات
+        </button>
+
+        {handmadeCategories.map((category) => (
+          <button
+            key={category.name}
+            type="button"
+            onClick={() => setSelectedCategory(category.name)}
+            className={`whitespace-nowrap rounded-full px-5 py-3 text-sm font-black ${
+              selectedCategory === category.name
+                ? "bg-[#b87333] text-white"
+                : "bg-[#eee6dc]"
+            }`}
+          >
+            {category.icon} {category.name}
+          </button>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section className="mx-auto max-w-6xl px-4 py-10">
+    <div className="mb-7">
+      <p className="text-sm font-bold text-[#b87333]">
+        HANDMADE
+      </p>
+
+      <h2 className="mt-2 text-3xl font-black">
+        منتجات هاند ميد
+      </h2>
+    </div>
+
+    {loading ? (
+      <div className="rounded-3xl border bg-white p-10 text-center">
+        <p className="font-bold">
+          جاري تحميل المنتجات...
+        </p>
+      </div>
+    ) : message ? (
+      <div className="rounded-3xl border bg-white p-10 text-center">
+        <p className="font-bold text-red-600">
+          {message}
+        </p>
+      </div>
+    ) : products.length === 0 ? (
+      <div className="rounded-3xl border bg-white p-10 text-center">
+        <div className="text-5xl">🧶</div>
+
+        <h3 className="mt-4 text-xl font-black">
+          لسه مفيش منتجات
+        </h3>
+
+        <p className="mt-2 text-sm text-[#746f68]">
+          قريبًا هتلاقي هنا منتجات هاند ميد من البائعين.
+        </p>
+      </div>
+    ) : (
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+        {products.map((product) => (
+          <Link
+            key={product.id}
+            href={`/products/${product.id}`}
+            className="overflow-hidden rounded-2xl border bg-white transition hover:-translate-y-1 hover:shadow-lg"
+          >
+            <div className="flex h-48 items-center justify-center bg-[#eee6dc]">
+              {product.image_url ? (
+                <img
+                  src={product.image_url}
+                  alt={product.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="text-6xl">🧶</span>
+              )}
+            </div>
+
+            <div className="p-4">
+              <h3 className="font-black">
+                {product.name}
+              </h3>
+
+              {product.description && (
+                <p className="mt-2 line-clamp-2 text-xs leading-5 text-[#746f68]">
+                  {product.description}
+                </p>
+              )}
+
+              <div className="mt-4 flex items-center justify-between">
+                <strong className="text-lg">
+                  {Number(product.price).toLocaleString("ar-EG")} ج.م
+                </strong>
+
+                <span className="text-sm font-black text-[#b87333]">
+                  عرض ←
+                </span>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    )}
+  </section>
+
   <section className="mx-auto max-w-6xl px-4 pb-16">
-    {loading && (
-      <div className="rounded-2xl border bg-white p-8 text-center font-bold">
-        جاري تحميل المنتجات...
-      </div>
-    )}
+    <div className="rounded-3xl bg-[#eee6dc] p-7 text-center">
+      <div className="text-5xl">🎁</div>
 
-    {error && (
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-center font-bold text-red-700">
-        حدث خطأ: {error}
-      </div>
-    )}
+      <h2 className="mt-4 text-2xl font-black">
+        بتبيع هاند ميد؟
+      </h2>
 
-    {!loading &&
-      !error &&
-      services.length === 0 && (
-        <div className="rounded-2xl border bg-white p-8 text-center">
-          <p className="font-black">
-            لا توجد منتجات متاحة حاليًا.
-          </p>
+      <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[#746f68]">
+        أضف منتجاتك على Tyson Media وخلي العملاء يشوفوا
+        منتجاتك ويتواصلوا معاك.
+      </p>
 
-          <p className="mt-2 text-sm text-[#746f68]">
-            سيتم إضافة المنتجات قريبًا.
-          </p>
-        </div>
-      )}
-
-    {!loading &&
-      !error &&
-      services.length > 0 && (
-        <>
-          <div className="mb-7">
-            <p className="text-sm font-bold text-[#b87333]">
-              Handmade
-            </p>
-
-            <h2 className="mt-2 text-3xl font-black">
-              المنتجات المتاحة
-            </h2>
-          </div>
-
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {services.map((service) => (
-              <article
-                key={service.id}
-                className="overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-              >
-                <div className="flex h-52 items-center justify-center bg-[#eee6dc] text-7xl">
-                  {service.image_url ? (
-                    <img
-                      src={service.image_url}
-                      alt={service.title}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    "🎁"
-                  )}
-                </div>
-
-                <div className="p-6">
-                  <div className="mb-2 text-sm font-bold text-[#b87333]">
-                    🛍️ Handmade
-                  </div>
-
-                  <h3 className="text-xl font-black">
-                    {service.title}
-                  </h3>
-
-                  <p className="mt-3 min-h-12 text-sm leading-6 text-[#746f68]">
-                    {service.description ||
-                      "منتج مميز من تايسون ميديا."}
-                  </p>
-
-                  <div className="mt-5 space-y-2 text-sm text-[#746f68]">
-                    <p>
-                      🏪{" "}
-                      <span className="font-bold text-[#211f1c]">
-                        {service.provider
-                          ?.business_name ||
-                          "مقدم الخدمة"}
-                      </span>
-                    </p>
-
-                    {service.provider?.city && (
-                      <p>
-                        📍 {service.provider.city}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="mt-6 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs text-[#746f68]">
-                        السعر
-                      </p>
-
-                      <p className="text-xl font-black">
-                        {Number(
-                          service.price || 0
-                        ).toLocaleString("ar-EG")}{" "}
-                        ج.م
-                      </p>
-                    </div>
-
-                    <Link
-                      href={`/bookings?service=${service.id}`}
-                      className="rounded-xl bg-[#211f1c] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b87333]"
-                    >
-                      اطلب الآن
-                    </Link>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </>
-      )}
+      <Link
+        href="/dashboard"
+        className="mt-5 inline-block rounded-xl bg-[#211f1c] px-6 py-3 font-black text-white"
+      >
+        لوحة التحكم
+      </Link>
+    </div>
   </section>
 </main>
 
