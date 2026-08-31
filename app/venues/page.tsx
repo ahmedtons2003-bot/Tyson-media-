@@ -1,399 +1,287 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
 const categories = [
-  { name: "الكل", icon: "🏛️" },
-  { name: "قاعات أفراح", icon: "💍" },
-  { name: "قاعات خطوبة", icon: "🥂" },
-  { name: "فنادق", icon: "🏨" },
-  { name: "أماكن مفتوحة", icon: "🌳" },
-  { name: "حفلات صغيرة", icon: "🎉" },
+  { icon: "🏛️", name: "قاعات أفراح" },
+  { icon: "🌿", name: "أماكن مفتوحة" },
+  { icon: "🏨", name: "فنادق" },
+  { icon: "🌊", name: "على البحر" },
+  { icon: "🌳", name: "حدائق" },
+  { icon: "✨", name: "أماكن فاخرة" },
 ];
 
 const venues = [
   {
     id: 1,
-    name: "قاعة رويال للاحتفالات",
-    category: "قاعات أفراح",
+    title: "قاعة أفراح فاخرة",
+    price: "من 25,000 ج.م",
     city: "الإسكندرية",
-    price: 15000,
-    capacity: "حتى 300 فرد",
     icon: "🏛️",
   },
   {
     id: 2,
-    name: "قاعة ليالي",
-    category: "قاعات أفراح",
+    title: "قاعة كلاسيك",
+    price: "من 18,000 ج.م",
     city: "القاهرة",
-    price: 22000,
-    capacity: "حتى 500 فرد",
-    icon: "💍",
+    icon: "✨",
   },
   {
     id: 3,
-    name: "قاعة جاردن",
-    category: "أماكن مفتوحة",
-    city: "الجيزة",
-    price: 18000,
-    capacity: "حتى 250 فرد",
-    icon: "🌳",
+    title: "قاعة على البحر",
+    price: "من 30,000 ج.م",
+    city: "الساحل الشمالي",
+    icon: "🌊",
   },
   {
     id: 4,
-    name: "قاعة جراند هوتيل",
-    category: "فنادق",
-    city: "القاهرة",
-    price: 30000,
-    capacity: "حتى 600 فرد",
-    icon: "🏨",
-  },
-  {
-    id: 5,
-    name: "قاعة روز",
-    category: "قاعات خطوبة",
-    city: "الإسكندرية",
-    price: 10000,
-    capacity: "حتى 180 فرد",
-    icon: "🥂",
-  },
-  {
-    id: 6,
-    name: "Garden Party",
-    category: "حفلات صغيرة",
-    city: "البحيرة",
-    price: 7500,
-    capacity: "حتى 100 فرد",
-    icon: "🎉",
+    title: "حديقة مناسبات",
+    price: "من 15,000 ج.م",
+    city: "الجيزة",
+    icon: "🌳",
   },
 ];
 
 export default function VenuesPage() {
-  const [category, setCategory] = useState("الكل");
-  const [search, setSearch] = useState("");
-  const [city, setCity] = useState("كل المحافظات");
-
-  const filteredVenues = venues.filter((venue) => {
-    const matchesCategory =
-      category === "الكل" ||
-      venue.category === category;
-
-    const matchesSearch =
-      venue.name
-        .toLowerCase()
-        .includes(search.toLowerCase());
-
-    const matchesCity =
-      city === "كل المحافظات" ||
-      venue.city === city;
-
-    return (
-      matchesCategory &&
-      matchesSearch &&
-      matchesCity
-    );
-  });
-
   return (
     <main
       dir="rtl"
-      className="min-h-screen bg-[#f7f7f7] text-[#211f1c]"
+      className="min-h-screen bg-[#f7f5f2] text-[#211f1c]"
     >
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur">
-        <div className="mx-auto max-w-7xl px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <Link
-              href="/"
-              className="text-2xl font-black"
-            >
-              Tyson{" "}
-              <span className="text-[#b87333]">
-                Media
-              </span>
-            </Link>
+      <Header />
 
-            <div className="hidden flex-1 md:block md:max-w-xl">
-              <input
-                value={search}
-                onChange={(e) =>
-                  setSearch(e.target.value)
-                }
-                placeholder="ابحث عن قاعة أو مكان مناسبات..."
-                className="w-full rounded-xl border bg-[#f6f5f3] px-5 py-3 font-bold outline-none focus:border-[#b87333]"
-              />
-            </div>
+      {/* HERO */}
 
-            <div className="flex items-center gap-2">
-              <Link
-                href="/cart"
-                className="rounded-xl border px-3 py-2 font-black"
-              >
-                🛒
-              </Link>
+      <section className="mx-auto max-w-7xl px-4 pt-6">
+        <div className="relative overflow-hidden rounded-[2.5rem] bg-[#211f1c] px-6 py-16 text-white md:px-12 md:py-24">
+          <div className="absolute -left-20 -top-20 h-80 w-80 rounded-full bg-[#b87333]/20 blur-3xl" />
 
-              <Link
-                href="/login"
-                className="rounded-xl bg-[#211f1c] px-4 py-2.5 text-sm font-black text-white"
-              >
-                دخول
-              </Link>
-            </div>
-          </div>
+          <div className="absolute -bottom-40 right-1/3 h-80 w-80 rounded-full bg-[#b87333]/10 blur-3xl" />
 
-          <div className="mt-3 md:hidden">
-            <input
-              value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
-              placeholder="ابحث عن قاعة..."
-              className="w-full rounded-xl border bg-[#f6f5f3] p-3 font-bold outline-none focus:border-[#b87333]"
-            />
-          </div>
-        </div>
-      </header>
+          <div className="relative max-w-3xl">
+            <div className="text-6xl">🏛️</div>
 
-      {/* Hero */}
-      <section className="mx-auto max-w-7xl px-4 py-5 md:py-8">
-        <div className="relative overflow-hidden rounded-[2rem] bg-[#211f1c] px-6 py-12 text-white md:px-12 md:py-16">
-          <div className="relative z-10 max-w-3xl">
-            <span className="inline-flex rounded-full bg-white/10 px-4 py-2 text-xs font-black text-[#e2b783]">
-              TYSON MEDIA • VENUES
-            </span>
+            <p className="mt-6 text-xs font-black tracking-[0.3em] text-[#d6a66f]">
+              WEDDING VENUES
+            </p>
 
-            <h1 className="mt-5 text-4xl font-black leading-tight md:text-6xl">
-              المكان المناسب
+            <h1 className="mt-3 text-4xl font-black leading-tight md:text-6xl">
+              قاعات الأفراح
               <br />
+
               <span className="text-[#d6a66f]">
-                لمناسبتك 🏛️
+                مكان يليق بفرحتك.
               </span>
             </h1>
 
-            <p className="mt-5 max-w-2xl text-sm leading-7 text-white/65 md:text-lg">
-              اكتشف قاعات الأفراح والخطوبة
-              والفنادق والأماكن المفتوحة
-              واحجز المكان اللي يناسب مناسبتك.
+            <p className="mt-6 max-w-2xl text-sm leading-8 text-white/60">
+              اختار المكان المناسب لفرحك أو
+              مناسبتك، وقارن بين القاعات والأسعار
+              والمواقع والخدمات.
             </p>
 
             <Link
               href="#venues"
-              className="mt-7 inline-block rounded-xl bg-[#b87333] px-7 py-4 font-black text-white transition hover:bg-[#9d612c]"
+              className="mt-8 inline-flex rounded-2xl bg-[#b87333] px-6 py-3 text-sm font-black text-white transition hover:bg-[#d6a66f]"
             >
               اكتشف القاعات
             </Link>
           </div>
-
-          <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-[#b87333]/20 blur-3xl" />
-
-          <div className="absolute -bottom-32 right-1/3 h-72 w-72 rounded-full bg-white/5 blur-3xl" />
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="mx-auto max-w-7xl px-4">
-        <div className="rounded-2xl border bg-white p-4">
-          <h2 className="mb-4 text-xl font-black">
-            نوع المكان
-          </h2>
+      {/* CATEGORIES */}
 
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {categories.map((item) => (
-              <button
-                key={item.name}
-                type="button"
-                onClick={() =>
-                  setCategory(item.name)
-                }
-                className={`flex min-w-fit items-center gap-2 rounded-full px-5 py-3 text-sm font-black transition ${
-                  category === item.name
-                    ? "bg-[#211f1c] text-white"
-                    : "bg-[#f0ece7] hover:bg-[#e6ddd4]"
-                }`}
-              >
-                <span>{item.icon}</span>
-                {item.name}
-              </button>
-            ))}
+      <section className="mx-auto max-w-7xl px-4 py-14">
+        <div className="mb-7">
+          <p className="text-xs font-black tracking-[0.25em] text-[#b87333]">
+            VENUES
+          </p>
+
+          <h2 className="mt-2 text-3xl font-black">
+            اختار المكان
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
+          {categories.map((category) => (
+            <button
+              key={category.name}
+              className="rounded-3xl border bg-white p-4 text-right transition hover:-translate-y-1 hover:border-[#b87333] hover:shadow-lg"
+            >
+              <div className="flex h-24 items-center justify-center rounded-2xl bg-[#eee6dc] text-5xl">
+                {category.icon}
+              </div>
+
+              <h3 className="mt-4 text-sm font-black">
+                {category.name}
+              </h3>
+
+              <p className="mt-2 text-xs font-bold text-[#b87333]">
+                عرض ←
+              </p>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* FILTERS */}
+
+      <section className="mx-auto max-w-7xl px-4">
+        <div className="rounded-3xl border bg-white p-5 shadow-sm">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div>
+              <label className="mb-2 block text-sm font-black">
+                نوع المكان
+              </label>
+
+              <select className="w-full rounded-2xl border bg-white p-3 outline-none focus:border-[#b87333]">
+                <option>كل الأماكن</option>
+                <option>قاعات أفراح</option>
+                <option>أماكن مفتوحة</option>
+                <option>فنادق</option>
+                <option>على البحر</option>
+                <option>حدائق</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-black">
+                المحافظة
+              </label>
+
+              <select className="w-full rounded-2xl border bg-white p-3 outline-none focus:border-[#b87333]">
+                <option>كل المحافظات</option>
+                <option>الإسكندرية</option>
+                <option>القاهرة</option>
+                <option>الجيزة</option>
+                <option>البحيرة</option>
+                <option>مطروح</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-black">
+                عدد الضيوف
+              </label>
+
+              <select className="w-full rounded-2xl border bg-white p-3 outline-none focus:border-[#b87333]">
+                <option>أي عدد</option>
+                <option>حتى 100 شخص</option>
+                <option>100 - 250 شخص</option>
+                <option>250 - 500 شخص</option>
+                <option>أكثر من 500 شخص</option>
+              </select>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Filters */}
-      <section className="mx-auto max-w-7xl px-4 py-5">
-        <div className="grid gap-3 md:grid-cols-2">
-          <select
-            value={city}
-            onChange={(e) =>
-              setCity(e.target.value)
-            }
-            className="rounded-xl border bg-white p-3 font-bold outline-none focus:border-[#b87333]"
-          >
-            <option>كل المحافظات</option>
-            <option>القاهرة</option>
-            <option>الإسكندرية</option>
-            <option>الجيزة</option>
-            <option>البحيرة</option>
-          </select>
+      {/* VENUES */}
 
-          <select
-            className="rounded-xl border bg-white p-3 font-bold outline-none focus:border-[#b87333]"
-            defaultValue="newest"
-          >
-            <option value="newest">
-              الأحدث
-            </option>
-            <option value="price_low">
-              السعر: من الأقل للأعلى
-            </option>
-            <option value="price_high">
-              السعر: من الأعلى للأقل
-            </option>
-          </select>
-        </div>
-      </section>
-
-      {/* Venues */}
       <section
         id="venues"
-        className="mx-auto max-w-7xl px-4 pb-16"
+        className="mx-auto max-w-7xl px-4 py-14"
       >
-        <div className="mb-5 flex items-end justify-between">
+        <div className="mb-7 flex items-end justify-between">
           <div>
-            <p className="text-sm font-black text-[#b87333]">
-              VENUES MARKET
+            <p className="text-xs font-black tracking-[0.25em] text-[#b87333]">
+              WEDDING VENUES
             </p>
 
-            <h2 className="mt-1 text-2xl font-black md:text-3xl">
-              القاعات والأماكن
+            <h2 className="mt-2 text-3xl font-black">
+              أماكن مميزة
             </h2>
           </div>
 
-          <span className="text-sm text-gray-500">
-            {filteredVenues.length} مكان
+          <span className="rounded-full bg-[#eee6dc] px-4 py-2 text-xs font-black">
+            {venues.length} أماكن
           </span>
         </div>
 
-        {filteredVenues.length === 0 ? (
-          <div className="rounded-3xl border bg-white p-12 text-center">
-            <div className="text-6xl">🏛️</div>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {venues.map((venue) => (
+            <article
+              key={venue.id}
+              className="group overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+            >
+              <div className="flex h-64 items-center justify-center bg-[#eee6dc] text-8xl transition group-hover:scale-105">
+                {venue.icon}
+              </div>
 
-            <h3 className="mt-4 text-xl font-black">
-              مفيش نتائج
-            </h3>
+              <div className="p-5">
+                <div className="mb-3 flex items-center gap-1 text-sm">
+                  <span>★★★★★</span>
 
-            <p className="mt-2 text-sm text-gray-500">
-              جرّب تغيير البحث أو الفلاتر.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-            {filteredVenues.map((venue) => (
-              <article
-                key={venue.id}
-                className="overflow-hidden rounded-3xl border bg-white transition hover:-translate-y-1 hover:shadow-xl"
-              >
-                <div className="relative flex h-56 items-center justify-center bg-[#eee6dc] text-8xl">
-                  {venue.icon}
-
-                  <span className="absolute right-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-black">
-                    {venue.category}
+                  <span className="text-xs text-gray-400">
+                    تقييم ممتاز
                   </span>
                 </div>
 
-                <div className="p-5">
-                  <h3 className="text-xl font-black">
-                    {venue.name}
-                  </h3>
+                <h3 className="text-xl font-black">
+                  {venue.title}
+                </h3>
 
-                  <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
-                    <span>📍</span>
-                    {venue.city}
-                  </div>
+                <p className="mt-3 text-sm leading-7 text-[#746f68]">
+                  مكان مناسب للأفراح والمناسبات
+                  مع إمكانية اختيار الخدمات حسب
+                  احتياجاتك.
+                </p>
 
-                  <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
-                    <span>👥</span>
-                    {venue.capacity}
-                  </div>
+                <div className="mt-4 space-y-2 text-sm">
+                  <p className="font-bold">
+                    📍 {venue.city}
+                  </p>
 
-                  <div className="mt-5 flex items-end justify-between">
-                    <div>
-                      <p className="text-xs text-gray-500">
-                        يبدأ من
-                      </p>
-
-                      <p className="mt-1 text-xl font-black text-[#b87333]">
-                        {venue.price.toLocaleString(
-                          "ar-EG"
-                        )}{" "}
-                        ج.م
-                      </p>
-                    </div>
-
-                    <span className="text-sm">
-                      ⭐ 4.8
-                    </span>
-                  </div>
-
-                  <Link
-                    href={`/bookings?service=venue-${venue.id}&type=venue`}
-                    className="mt-5 block rounded-xl bg-[#211f1c] px-4 py-3 text-center font-black text-white transition hover:bg-[#b87333]"
-                  >
-                    احجز المكان
-                  </Link>
+                  <p className="font-black text-[#b87333]">
+                    {venue.price}
+                  </p>
                 </div>
-              </article>
-            ))}
-          </div>
-        )}
+
+                <Link
+                  href="/bookings"
+                  className="mt-5 block rounded-xl bg-[#211f1c] px-5 py-3 text-center text-sm font-black text-white transition hover:bg-[#b87333]"
+                >
+                  احجز الآن
+                </Link>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
 
-      {/* CTA */}
+      {/* BOOKING NOTICE */}
+
       <section className="mx-auto max-w-7xl px-4 pb-16">
-        <div className="rounded-[2rem] bg-[#eee6dc] p-8 text-center md:p-12">
-          <div className="text-6xl">🏛️</div>
+        <div className="rounded-[2rem] bg-[#eee6dc] p-7 md:p-10">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-4xl">📅</div>
 
-          <h2 className="mt-4 text-2xl font-black md:text-3xl">
-            عندك قاعة أو مكان مناسبات؟
-          </h2>
+              <h2 className="mt-4 text-2xl font-black">
+                احجز القاعة بدري
+              </h2>
 
-          <p className="mx-auto mt-3 max-w-xl leading-7 text-gray-600">
-            أضف قاعتك على Tyson Media
-            واستقبل طلبات الحجز من العملاء.
-          </p>
+              <p className="mt-2 max-w-2xl text-sm leading-7 text-[#746f68]">
+                يفضل الحجز قبل موعد المناسبة
+                بـ30 يومًا على الأقل لضمان توفر
+                المكان والموعد المناسب.
+              </p>
+            </div>
 
-          <Link
-            href="/register"
-            className="mt-6 inline-block rounded-xl bg-[#211f1c] px-7 py-4 font-black text-white transition hover:bg-[#b87333]"
-          >
-            أضف مكانك
-          </Link>
+            <Link
+              href="/bookings"
+              className="w-fit rounded-xl bg-[#211f1c] px-6 py-3 text-sm font-black text-white"
+            >
+              ابدأ الحجز
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-7 text-center">
-          <div className="text-xl font-black">
-            Tyson{" "}
-            <span className="text-[#b87333]">
-              Media
-            </span>
-          </div>
-
-          <p className="mt-2 text-sm text-gray-500">
-            كل احتياجات مناسبتك في مكان واحد.
-          </p>
-
-          <Link
-            href="/"
-            className="mt-4 inline-block text-sm font-black text-[#b87333]"
-          >
-            العودة للرئيسية
-          </Link>
-        </div>
-      </footer>
+      <Footer />
     </main>
   );
 }
