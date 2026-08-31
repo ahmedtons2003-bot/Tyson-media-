@@ -11,6 +11,7 @@ type Product = {
   price: number;
   image_url: string | null;
   category_id: string | null;
+  created_at?: string;
 };
 
 const categories = [
@@ -64,6 +65,7 @@ export default function HandmadePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("الكل");
   const [governorate, setGovernorate] =
@@ -91,7 +93,7 @@ export default function HandmadePage() {
       const { data, error } = await supabase
         .from("products")
         .select(
-          "id, name, description, price, image_url, category_id"
+          "id, name, description, price, image_url, category_id, created_at"
         )
         .order("created_at", {
           ascending: false,
@@ -131,7 +133,7 @@ export default function HandmadePage() {
     }
 
     if (category !== "الكل") {
-      const categoryText = category
+      const searchCategory = category
         .replace("هاند ميد", "")
         .trim()
         .toLowerCase();
@@ -139,7 +141,7 @@ export default function HandmadePage() {
       result = result.filter((product) =>
         product.name
           .toLowerCase()
-          .includes(categoryText)
+          .includes(searchCategory)
       );
     }
 
@@ -232,14 +234,14 @@ export default function HandmadePage() {
             TYSON MEDIA • HANDMADE
           </p>
 
-          <h1 className="mt-3 max-w-3xl text-3xl font-black md:text-5xl">
-            كل الهاند ميد في مكان واحد 🧶
+          <h1 className="mt-3 text-3xl font-black md:text-5xl">
+            سوق الهاند ميد 🧶
           </h1>
 
           <p className="mt-4 max-w-2xl leading-7 text-white/70">
             شنط، خواتم، انسيالات، سلاسل،
-            إكسسوارات، هدايا ومنتجات مصنوعة
-            يدويًا من بائعين مختلفين.
+            إكسسوارات، هدايا، كروشيه،
+            تطريز وديكورات مصنوعة يدويًا.
           </p>
         </div>
       </section>
@@ -247,6 +249,10 @@ export default function HandmadePage() {
       {/* Categories */}
       <section className="mx-auto max-w-7xl px-4">
         <div className="rounded-2xl border bg-white p-4">
+          <h2 className="mb-4 text-xl font-black">
+            الأقسام
+          </h2>
+
           <div className="flex gap-3 overflow-x-auto pb-2">
             {categories.map((item) => (
               <button
@@ -271,56 +277,63 @@ export default function HandmadePage() {
 
       {/* Filters */}
       <section className="mx-auto max-w-7xl px-4 py-5">
-        <div className="grid gap-3 md:grid-cols-2">
-          <select
-            value={governorate}
-            onChange={(e) =>
-              setGovernorate(e.target.value)
-            }
-            className="rounded-xl border bg-white p-3 font-bold outline-none focus:border-[#b87333]"
-          >
-            {governorates.map((item) => (
-              <option
-                key={item}
-                value={item}
-              >
-                📍 {item}
+        <div className="rounded-2xl border bg-white p-4">
+          <h2 className="mb-4 text-xl font-black">
+            تصفية المنتجات
+          </h2>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <select
+              value={governorate}
+              onChange={(e) =>
+                setGovernorate(e.target.value)
+              }
+              className="rounded-xl border bg-white p-3 font-bold outline-none focus:border-[#b87333]"
+            >
+              {governorates.map((item) => (
+                <option
+                  key={item}
+                  value={item}
+                >
+                  📍 {item}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={sort}
+              onChange={(e) =>
+                setSort(e.target.value)
+              }
+              className="rounded-xl border bg-white p-3 font-bold outline-none focus:border-[#b87333]"
+            >
+              <option value="newest">
+                الأحدث
               </option>
-            ))}
-          </select>
 
-          <select
-            value={sort}
-            onChange={(e) =>
-              setSort(e.target.value)
-            }
-            className="rounded-xl border bg-white p-3 font-bold outline-none focus:border-[#b87333]"
-          >
-            <option value="newest">
-              الأحدث
-            </option>
+              <option value="price_low">
+                السعر: من الأقل للأعلى
+              </option>
 
-            <option value="price_low">
-              السعر: من الأقل للأعلى
-            </option>
+              <option value="price_high">
+                السعر: من الأعلى للأقل
+              </option>
+            </select>
+          </div>
 
-            <option value="price_high">
-              السعر: من الأعلى للأقل
-            </option>
-          </select>
+          {(search ||
+            category !== "الكل" ||
+            governorate !==
+              "كل المحافظات") && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="mt-4 rounded-xl bg-[#211f1c] px-5 py-3 text-sm font-black text-white"
+            >
+              مسح الفلاتر
+            </button>
+          )}
         </div>
-
-        {(search ||
-          category !== "الكل" ||
-          governorate !== "كل المحافظات") && (
-          <button
-            type="button"
-            onClick={resetFilters}
-            className="mt-3 rounded-xl bg-[#211f1c] px-5 py-2 text-sm font-black text-white"
-          >
-            مسح الفلاتر
-          </button>
-        )}
       </section>
 
       {/* Products */}
@@ -332,7 +345,7 @@ export default function HandmadePage() {
             </p>
 
             <h2 className="mt-1 text-2xl font-black md:text-3xl">
-              منتجات مميزة
+              المنتجات
             </h2>
           </div>
 
@@ -353,9 +366,12 @@ export default function HandmadePage() {
               {message}
             </p>
           </div>
-        ) : filteredProducts.length === 0 ? (
+        ) : filteredProducts.length ===
+          0 ? (
           <div className="rounded-2xl border bg-white p-12 text-center">
-            <div className="text-6xl">🧶</div>
+            <div className="text-6xl">
+              🧶
+            </div>
 
             <h3 className="mt-4 text-xl font-black">
               مفيش منتجات مطابقة
@@ -368,4 +384,97 @@ export default function HandmadePage() {
             <button
               type="button"
               onClick={resetFilters}
-              className="mt
+              className="mt-5 rounded-xl bg-[#211f1c] px-6 py-3 font-black text-white"
+            >
+              مسح البحث والفلاتر
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {filteredProducts.map(
+              (product) => (
+                <article
+                  key={product.id}
+                  className="overflow-hidden rounded-2xl border bg-white transition hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <Link
+                    href={`/handmade/${product.id}`}
+                    className="block"
+                  >
+                    <div className="relative flex h-48 items-center justify-center bg-[#eee6dc]">
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-6xl">
+                          🧶
+                        </span>
+                      )}
+
+                      <span className="absolute right-2 top-2 rounded-full bg-white/95 px-3 py-1 text-xs font-black">
+                        Handmade
+                      </span>
+                    </div>
+
+                    <div className="p-4">
+                      <h3 className="line-clamp-2 font-black">
+                        {product.name}
+                      </h3>
+
+                      {product.description && (
+                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-gray-500">
+                          {product.description}
+                        </p>
+                      )}
+
+                      <p className="mt-4 text-lg font-black text-[#b87333]">
+                        {Number(
+                          product.price
+                        ).toLocaleString(
+                          "ar-EG"
+                        )}{" "}
+                        ج.م
+                      </p>
+
+                      <span className="mt-3 block w-full rounded-xl bg-[#211f1c] px-3 py-3 text-center text-sm font-black text-white">
+                        عرض المنتج
+                      </span>
+                    </div>
+                  </Link>
+                </article>
+              )
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* Seller */}
+      <section className="mx-auto max-w-7xl px-4 pb-16">
+        <div className="rounded-3xl bg-[#eee6dc] p-7 text-center">
+          <div className="text-5xl">
+            🏪
+          </div>
+
+          <h2 className="mt-3 text-2xl font-black">
+            عندك منتجات هاند ميد؟
+          </h2>
+
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-gray-600">
+            اعرض منتجاتك على Tyson Media
+            ووصل لعملاء من جميع محافظات مصر.
+          </p>
+
+          <Link
+            href="/dashboard"
+            className="mt-5 inline-block rounded-xl bg-[#211f1c] px-6 py-3 font-black text-white"
+          >
+            ابدأ البيع
+          </Link>
+        </div>
+      </section>
+    </main>
+  );
+}
