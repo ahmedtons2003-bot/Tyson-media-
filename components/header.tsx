@@ -1,39 +1,116 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
+
+const links = [
+  { href: "/photography", label: "التصوير" },
+  { href: "/venues", label: "القاعات" },
+  { href: "/dresses", label: "الفساتين" },
+  { href: "/suits", label: "البدلات" },
+  { href: "/beauty", label: "بيوتي" },
+  { href: "/cars", label: "السيارات" },
+  { href: "/handmade", label: "هاند ميد" },
+];
 
 export default function Header() {
+  const [open, setOpen] = useState(false);
+
   return (
-    <header
-      dir="rtl"
-      className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur"
-    >
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-        <Link href="/" className="text-2xl font-black">
-          Tyson <span className="text-[#b87333]">Media</span>
+    <header className="sticky top-0 z-50 border-b border-black/5 bg-white/95 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
+        <Link
+          href="/"
+          onClick={() => setOpen(false)}
+          className="flex items-center gap-2"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#211f1c] text-sm font-black text-white">
+            TM
+          </div>
+
+          <div className="leading-none">
+            <div className="text-lg font-black">
+              Tyson
+            </div>
+
+            <div className="text-[9px] font-black tracking-[0.25em] text-[#b87333]">
+              MEDIA
+            </div>
+          </div>
         </Link>
 
-        <nav className="hidden gap-6 md:flex">
-          <Link href="/">الرئيسية</Link>
-          <Link href="/photography">التصوير</Link>
-          <Link href="/handmade">Handmade</Link>
-          <Link href="/providers">مقدمو الخدمات</Link>
+        <nav className="hidden items-center gap-1 lg:flex">
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="rounded-xl px-3 py-2 text-sm font-bold text-[#514c46] transition hover:bg-[#f3eee8] hover:text-[#b87333]"
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
 
-        <div className="flex gap-2">
+        <div className="hidden items-center gap-2 md:flex">
           <Link
             href="/login"
-            className="rounded-xl bg-[#f2eee8] px-4 py-2 text-sm font-bold"
+            className="rounded-xl px-4 py-2 text-sm font-black hover:bg-[#f3eee8]"
           >
             دخول
           </Link>
 
           <Link
             href="/register"
-            className="hidden rounded-xl bg-[#211f1c] px-4 py-2 text-sm font-bold text-white sm:block"
+            className="rounded-xl bg-[#211f1c] px-4 py-2.5 text-sm font-black text-white hover:bg-[#b87333]"
           >
-            حساب جديد
+            إنشاء حساب
           </Link>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f3eee8] text-xl md:hidden"
+          aria-label="القائمة"
+        >
+          {open ? "×" : "☰"}
+        </button>
       </div>
+
+      {open && (
+        <div className="border-t border-black/5 bg-white px-4 pb-5 pt-3 md:hidden">
+          <nav className="grid gap-1">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className="rounded-xl px-4 py-3 text-sm font-black hover:bg-[#f3eee8] hover:text-[#b87333]"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-black/5 pt-3">
+            <Link
+              href="/login"
+              onClick={() => setOpen(false)}
+              className="rounded-xl border px-4 py-3 text-center text-sm font-black"
+            >
+              دخول
+            </Link>
+
+            <Link
+              href="/register"
+              onClick={() => setOpen(false)}
+              className="rounded-xl bg-[#211f1c] px-4 py-3 text-center text-sm font-black text-white"
+            >
+              إنشاء حساب
+            </Link>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
