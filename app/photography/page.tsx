@@ -1,58 +1,83 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+type Service = {
+  id: string;
+  title: string;
+  description: string | null;
+  price: number | null;
+  duration_minutes: number | null;
+  image_url: string | null;
+  provider_id: string;
+  provider: {
+    business_name: string;
+    city: string | null;
+  } | null;
+};
 
 const photographyCategories = [
   {
     icon: "💍",
     title: "تصوير أفراح وWedding",
     description: "تغطية كاملة للفرح من البداية للنهاية.",
+    keywords: ["فرح", "افراح", "wedding"],
   },
   {
     icon: "💐",
     title: "تصوير خطوبة",
     description: "تصوير الخطوبة والاحتفالات واللحظات الخاصة.",
+    keywords: ["خطوبة", "engagement"],
   },
   {
     icon: "👤",
     title: "Portrait",
     description: "جلسات بورتريه فردية وشخصية.",
+    keywords: ["portrait", "بورتريه"],
   },
   {
     icon: "👗",
     title: "Fashion",
     description: "تصوير موديلز وملابس وبراندات وفاشون.",
+    keywords: ["fashion", "فاشون", "موديل"],
   },
   {
     icon: "💄",
     title: "Makeup & Beauty",
     description: "تصوير ميك أب أرتيست وBeauty Sessions.",
+    keywords: ["makeup", "beauty", "ميكب", "ميكاب"],
   },
   {
     icon: "📦",
     title: "تصوير منتجات",
     description: "تصوير احترافي للمنتجات والمتاجر والبراندات.",
+    keywords: ["منتجات", "product"],
   },
   {
     icon: "🎉",
     title: "حفلات ومناسبات",
     description: "تغطية أعياد الميلاد والحفلات والفعاليات.",
+    keywords: ["حفلات", "حفلة", "party", "مناسبات"],
   },
   {
     icon: "🏢",
     title: "مؤتمرات وفعاليات",
     description: "تغطية الشركات والمؤتمرات والفعاليات.",
+    keywords: ["مؤتمر", "مؤتمرات", "فعاليات", "events"],
   },
   {
     icon: "🎥",
     title: "تصوير فيديو",
     description: "تصوير فيديو بجميع مستويات الجودة.",
+    keywords: ["فيديو", "video"],
   },
   {
     icon: "🚁",
     title: "تصوير Drone",
     description: "تصوير جوي للمناسبات والأماكن والمشروعات.",
+    keywords: ["drone", "درون", "جوي"],
   },
 ];
 
@@ -96,26 +121,131 @@ const egyptGovernorates = [
 ];
 
 export default function PhotographyPage() {
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const [selectedCategory, setSelectedCategory] = useState("الكل");
   const [city, setCity] = useState("كل المحافظات");
+  const [quality, setQuality] = useState("كل الجودات");
 
-  const categories = useMemo(() => {
-    if (selectedCategory === "الكل") {
-      return photographyCategories;
+  useEffect(() => {
+    async function loadServices() {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (!url || !key) {
+        setError("إعدادات Supabase غير موجودة.");
+        setLoading(false);
+        return;
+      }
+
+      const supabase = createClient(url, key);
+
+      const { data, error } = await supabase
+        .from("services")
+        .select(`
+          id,
+          title,
+          description,
+          price,
+          duration_minutes,
+          image_url,
+          provider_id,
+          provider:providers (
+            business_name,
+            city
+          )
+        `)
+        .eq("is_active", true)
+        .order("created_at", {
+          ascending: false,
+        });
+
+      if (error) {
+        setError(
+          "حدث خطأ أثناء تحميل خدمات التصوير: " +
+            error.message
+        );
+        setServices([]);
+      } else {
+        setServices(
+          (data || []) as unknown as Service[]
+        );
+      }
+
+      setLoading(false);
     }
 
-    return photographyCategories.filter(
-      (item) => item.title === selectedCategory
-    );
-  }, [selectedCategory]);
+    loadServices();
+  }, []);
 
-  function selectCategory(title: string) {
-    setSelectedCategory(title);
-  }
+  const filteredServices = useMemo(() => {
+    return services.filter((service) => {
+      const title = (service.title || "").toLowerCase();
+      const description = (
+        service.description || ""
+      ).toLowerCase();
+
+      const fullText = `${title} ${description}`;
+
+      // فلترة المحافظة
+      const cityMatch =
+        city === "كل المحافظات" ||
+        service.provider?.city === city;
+
+      if (!cityMatch) {
+        return false;
+      }
+
+      // فلترة نوع التصوير
+      if (selectedCategory !== "الكل") {
+        const category = photographyCategories.find(
+          (item) => item.title === selectedCategory
+        );
+
+        if (!category) {
+          return false;
+        }
+
+        const categoryMatch = category.keywords.some(
+          (keyword) =>
+            fullText.includes(keyword.toLowerCase())
+        );
+
+        if (!categoryMatch) {
+          return false;
+        }
+      }
+
+      // فلترة الجودة
+      if (quality !== "كل الجودات") {
+        if (!fullText.includes(quality.toLowerCase())) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [services, city, selectedCategory, quality]);
 
   function resetFilters() {
     setSelectedCategory("الكل");
     setCity("كل المحافظات");
+    setQuality("كل الجودات");
+  }
+
+  function selectCategory(title: string) {
+    setSelectedCategory(title);
+
+    if (title !== "تصوير فيديو") {
+      setQuality("كل الجودات");
+    }
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   }
 
   return (
@@ -125,7 +255,7 @@ export default function PhotographyPage() {
     >
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
           <Link
             href="/"
             className="text-2xl font-black"
@@ -136,17 +266,26 @@ export default function PhotographyPage() {
             </span>
           </Link>
 
-          <Link
-            href="/"
-            className="rounded-xl bg-[#211f1c] px-4 py-2 text-sm font-bold text-white"
-          >
-            الرئيسية
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/dashboard"
+              className="rounded-xl border px-4 py-2 text-sm font-bold"
+            >
+              حجوزاتي
+            </Link>
+
+            <Link
+              href="/"
+              className="rounded-xl bg-[#211f1c] px-4 py-2 text-sm font-bold text-white"
+            >
+              الرئيسية
+            </Link>
+          </div>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="mx-auto max-w-6xl px-4 py-10">
+      <section className="mx-auto max-w-7xl px-4 py-8 md:py-10">
         <div className="overflow-hidden rounded-[2rem] bg-[#211f1c] px-6 py-14 text-center text-white md:px-10 md:py-20">
           <div className="text-6xl">
             📸
@@ -161,16 +300,17 @@ export default function PhotographyPage() {
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl leading-8 text-white/70">
-            اختار نوع التصوير والمحافظة المناسبة لك،
-            واستكشف الخدمات المتاحة على Tyson Media.
+            اختار نوع التصوير والمحافظة والجودة،
+            وشوف الخدمات المناسبة ليك.
           </p>
         </div>
       </section>
 
       {/* Filters */}
-      <section className="mx-auto max-w-6xl px-4">
+      <section className="mx-auto max-w-7xl px-4">
         <div className="rounded-3xl border bg-white p-5 shadow-sm">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
+
             {/* Category */}
             <div>
               <label className="mb-2 block text-sm font-bold">
@@ -180,7 +320,7 @@ export default function PhotographyPage() {
               <select
                 value={selectedCategory}
                 onChange={(e) =>
-                  setSelectedCategory(e.target.value)
+                  selectCategory(e.target.value)
                 }
                 className="w-full rounded-xl border bg-white p-3 outline-none focus:border-[#b87333]"
               >
@@ -188,18 +328,20 @@ export default function PhotographyPage() {
                   كل أنواع التصوير
                 </option>
 
-                {photographyCategories.map((item) => (
-                  <option
-                    key={item.title}
-                    value={item.title}
-                  >
-                    {item.title}
-                  </option>
-                ))}
+                {photographyCategories.map(
+                  (item) => (
+                    <option
+                      key={item.title}
+                      value={item.title}
+                    >
+                      {item.title}
+                    </option>
+                  )
+                )}
               </select>
             </div>
 
-            {/* Governorates */}
+            {/* Governorate */}
             <div>
               <label className="mb-2 block text-sm font-bold">
                 المحافظة
@@ -228,9 +370,39 @@ export default function PhotographyPage() {
                 )}
               </select>
             </div>
+
+            {/* Quality */}
+            <div>
+              <label className="mb-2 block text-sm font-bold">
+                جودة الفيديو
+              </label>
+
+              <select
+                value={quality}
+                onChange={(e) =>
+                  setQuality(e.target.value)
+                }
+                className="w-full rounded-xl border bg-white p-3 outline-none focus:border-[#b87333]"
+              >
+                <option value="كل الجودات">
+                  كل الجودات
+                </option>
+
+                {videoQualities.map(
+                  (item) => (
+                    <option
+                      key={item}
+                      value={item}
+                    >
+                      {item}
+                    </option>
+                  )
+                )}
+              </select>
+            </div>
           </div>
 
-          {/* Active Filters */}
+          {/* Active filters */}
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-[#eee6dc] px-4 py-2 text-sm font-bold">
               📸 {selectedCategory}
@@ -240,8 +412,15 @@ export default function PhotographyPage() {
               📍 {city}
             </span>
 
+            {quality !== "كل الجودات" && (
+              <span className="rounded-full bg-[#eee6dc] px-4 py-2 text-sm font-bold">
+                🎥 {quality}
+              </span>
+            )}
+
             {(selectedCategory !== "الكل" ||
-              city !== "كل المحافظات") && (
+              city !== "كل المحافظات" ||
+              quality !== "كل الجودات") && (
               <button
                 type="button"
                 onClick={resetFilters}
@@ -254,8 +433,8 @@ export default function PhotographyPage() {
         </div>
       </section>
 
-      {/* Photography Categories */}
-      <section className="mx-auto max-w-6xl px-4 py-10">
+      {/* Categories */}
+      <section className="mx-auto max-w-7xl px-4 py-10">
         <div className="mb-7">
           <p className="text-sm font-bold text-[#b87333]">
             PHOTOGRAPHY
@@ -266,49 +445,200 @@ export default function PhotographyPage() {
           </h2>
 
           <p className="mt-2 text-sm text-[#746f68]">
-            اضغط على أي نوع لعرضه فقط.
+            اضغط على القسم لعرض الخدمات الخاصة به.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-          {categories.map((item) => (
-            <button
-              key={item.title}
-              type="button"
-              onClick={() =>
-                selectCategory(item.title)
-              }
-              className={`group rounded-2xl border p-5 text-right transition hover:-translate-y-1 hover:shadow-lg ${
-                selectedCategory === item.title
-                  ? "border-[#b87333] bg-[#fff8f1] ring-2 ring-[#b87333]/20"
-                  : "bg-white"
-              }`}
-            >
-              <div className="flex h-28 items-center justify-center rounded-xl bg-[#eee6dc] text-5xl">
-                {item.icon}
-              </div>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          {photographyCategories.map(
+            (item) => (
+              <button
+                key={item.title}
+                type="button"
+                onClick={() =>
+                  selectCategory(item.title)
+                }
+                className={`group rounded-2xl border p-5 text-right transition hover:-translate-y-1 hover:shadow-lg ${
+                  selectedCategory === item.title
+                    ? "border-[#b87333] bg-[#fff8f1] ring-2 ring-[#b87333]/20"
+                    : "bg-white"
+                }`}
+              >
+                <div className="flex h-28 items-center justify-center rounded-xl bg-[#eee6dc] text-5xl">
+                  {item.icon}
+                </div>
 
-              <h3 className="mt-4 font-black">
-                {item.title}
-              </h3>
+                <h3 className="mt-4 font-black">
+                  {item.title}
+                </h3>
 
-              <p className="mt-2 text-xs leading-5 text-[#746f68]">
-                {item.description}
-              </p>
+                <p className="mt-2 text-xs leading-5 text-[#746f68]">
+                  {item.description}
+                </p>
 
-              <span className="mt-4 block text-sm font-black text-[#b87333]">
-                اكتشف الخدمات ←
-              </span>
-            </button>
-          ))}
+                <span className="mt-4 block text-sm font-black text-[#b87333]">
+                  عرض الخدمات ←
+                </span>
+              </button>
+            )
+          )}
         </div>
+      </section>
+
+      {/* Services */}
+      <section className="mx-auto max-w-7xl px-4 pb-10">
+        <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-bold text-[#b87333]">
+              SERVICES
+            </p>
+
+            <h2 className="mt-2 text-3xl font-black">
+              الخدمات المتاحة
+            </h2>
+
+            <p className="mt-2 text-sm text-[#746f68]">
+              {city === "كل المحافظات"
+                ? "كل المحافظات"
+                : `الخدمات في ${city}`}
+            </p>
+          </div>
+
+          <span className="rounded-full bg-[#eee6dc] px-4 py-2 text-sm font-black">
+            {loading
+              ? "..."
+              : `${filteredServices.length} خدمة`}
+          </span>
+        </div>
+
+        {loading ? (
+          <div className="rounded-3xl border bg-white p-10 text-center font-bold">
+            جاري تحميل خدمات التصوير...
+          </div>
+        ) : error ? (
+          <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-center font-bold text-red-700">
+            {error}
+          </div>
+        ) : filteredServices.length === 0 ? (
+          <div className="rounded-3xl border bg-white p-10 text-center">
+            <div className="text-5xl">
+              🔍
+            </div>
+
+            <h3 className="mt-4 text-xl font-black">
+              لا توجد خدمات مطابقة
+            </h3>
+
+            <p className="mt-2 text-sm text-[#746f68]">
+              جرّب تغيير نوع التصوير أو المحافظة أو الجودة.
+            </p>
+
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="mt-5 rounded-xl bg-[#b87333] px-6 py-3 font-black text-white"
+            >
+              مسح الفلاتر
+            </button>
+          </div>
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {filteredServices.map(
+              (service) => (
+                <article
+                  key={service.id}
+                  className="overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <div className="flex h-52 items-center justify-center overflow-hidden bg-[#eee6dc] text-7xl">
+                    {service.image_url ? (
+                      <img
+                        src={service.image_url}
+                        alt={service.title}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      "📸"
+                    )}
+                  </div>
+
+                  <div className="p-6">
+                    <p className="text-sm font-bold text-[#b87333]">
+                      ⭐ خدمة تصوير
+                    </p>
+
+                    <h3 className="mt-2 text-xl font-black">
+                      {service.title}
+                    </h3>
+
+                    <p className="mt-3 min-h-12 text-sm leading-6 text-[#746f68]">
+                      {service.description ||
+                        "خدمة تصوير احترافية على Tyson Media."}
+                    </p>
+
+                    <div className="mt-5 space-y-2 text-sm text-[#746f68]">
+                      {service.provider?.business_name && (
+                        <p>
+                          🏪{" "}
+                          <span className="font-bold text-[#211f1c]">
+                            {
+                              service.provider
+                                .business_name
+                            }
+                          </span>
+                        </p>
+                      )}
+
+                      {service.provider?.city && (
+                        <p>
+                          📍{" "}
+                          {service.provider.city}
+                        </p>
+                      )}
+
+                      {service.duration_minutes && (
+                        <p>
+                          ⏱️{" "}
+                          {service.duration_minutes} دقيقة
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mt-6 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs text-[#746f68]">
+                          السعر
+                        </p>
+
+                        <p className="text-xl font-black">
+                          {Number(
+                            service.price || 0
+                          ).toLocaleString(
+                            "ar-EG"
+                          )}{" "}
+                          ج.م
+                        </p>
+                      </div>
+
+                      <Link
+                        href={`/bookings?service=${service.id}`}
+                        className="rounded-xl bg-[#211f1c] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b87333]"
+                      >
+                        احجز الآن
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              )
+            )}
+          </div>
+        )}
       </section>
 
       {/* Video Quality */}
       {(selectedCategory === "الكل" ||
         selectedCategory === "تصوير فيديو") && (
-        <section className="mx-auto max-w-6xl px-4 pb-10">
-          <div className="rounded-3xl bg-[#eee6dc] p-7">
+        <section className="mx-auto max-w-7xl px-4 pb-10">
+          <div className="rounded-3xl bg-[#eee6dc] p-7 md:p-9">
             <p className="text-sm font-bold text-[#b87333]">
               VIDEO PRODUCTION
             </p>
@@ -318,21 +648,36 @@ export default function PhotographyPage() {
             </h2>
 
             <p className="mt-3 text-[#746f68]">
-              اختار جودة التصوير المناسبة لمشروعك أو مناسبتك.
+              اضغط على الجودة لعرض خدمات الفيديو المتاحة بها.
             </p>
 
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
-              {videoQualities.map((quality) => (
-                <Link
-                  key={quality}
-                  href={`/bookings?service=video&quality=${encodeURIComponent(
-                    quality
-                  )}`}
-                  className="rounded-xl border bg-white p-4 text-center font-black transition hover:-translate-y-1 hover:border-[#b87333] hover:bg-[#fff8f1] hover:shadow-md"
-                >
-                  {quality}
-                </Link>
-              ))}
+              {videoQualities.map(
+                (item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory(
+                        "تصوير فيديو"
+                      );
+                      setQuality(item);
+
+                      window.scrollTo({
+                        top: 0,
+                        behavior: "smooth",
+                      });
+                    }}
+                    className={`rounded-xl border p-4 text-center font-black transition hover:-translate-y-1 hover:border-[#b87333] hover:bg-[#fff8f1] hover:shadow-md ${
+                      quality === item
+                        ? "border-[#b87333] bg-[#fff8f1]"
+                        : "bg-white"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                )
+              )}
             </div>
           </div>
         </section>
@@ -341,119 +686,10 @@ export default function PhotographyPage() {
       {/* Drone */}
       {(selectedCategory === "الكل" ||
         selectedCategory === "تصوير Drone") && (
-        <section className="mx-auto max-w-6xl px-4 pb-10">
+        <section className="mx-auto max-w-7xl px-4 pb-10">
           <div className="rounded-3xl bg-[#211f1c] p-7 text-white md:p-9">
             <div className="text-5xl">
               🚁
             </div>
 
-            <h2 className="mt-4 text-3xl font-black">
-              تصوير Drone
-            </h2>
-
-            <p className="mt-3 max-w-2xl leading-7 text-white/70">
-              تصوير جوي للمناسبات، الأفراح، الفنادق،
-              العقارات، الأماكن السياحية والمشروعات.
-            </p>
-
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/bookings?service=drone"
-                className="rounded-xl bg-[#b87333] px-6 py-3 text-center font-black text-white transition hover:bg-[#d08b4d]"
-              >
-                احجز خدمة Drone 🚁
-              </Link>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setSelectedCategory("تصوير Drone")
-                }
-                className="rounded-xl border border-white/15 bg-white/10 px-6 py-3 font-black text-white transition hover:bg-white/15"
-              >
-                عرض خدمات الـ Drone
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Selected Location */}
-      <section className="mx-auto max-w-6xl px-4 pb-10">
-        <div className="rounded-3xl border bg-white p-7">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-sm font-bold text-[#b87333]">
-                LOCATION
-              </p>
-
-              <h2 className="mt-2 text-2xl font-black">
-                خدمات التصوير في {city}
-              </h2>
-
-              <p className="mt-2 text-sm text-[#746f68]">
-                سيتم استخدام المحافظة المختارة لتحديد
-                مقدمي الخدمة المناسبين.
-              </p>
-            </div>
-
-            <Link
-              href="/dashboard"
-              className="rounded-xl bg-[#211f1c] px-6 py-3 text-center font-black text-white"
-            >
-              حجوزاتي
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Bottom CTA */}
-      <section className="mx-auto max-w-6xl px-4 pb-16">
-        <div className="rounded-3xl border bg-white p-7 text-center">
-          <div className="text-5xl">
-            📸
-          </div>
-
-          <h2 className="mt-4 text-2xl font-black">
-            جاهز تحجز؟
-          </h2>
-
-          <p className="mt-2 text-[#746f68]">
-            اختار نوع التصوير والمحافظة ثم احجز الخدمة
-            المناسبة لك.
-          </p>
-
-          <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link
-              href="/bookings"
-              className="rounded-xl bg-[#b87333] px-6 py-3 font-black text-white"
-            >
-              احجز الآن
-            </Link>
-
-            <Link
-              href="/"
-              className="rounded-xl bg-[#211f1c] px-6 py-3 font-black text-white"
-            >
-              العودة للرئيسية
-            </Link>
-          </div>
-        </div>
-      </section>
-    </main>
-  );
-}
-
-ده يتنسخ كله في:
-
-"app/photography/page.tsx"
-
-والتعديل فيه:
-
-- ✅ جميع محافظات مصر الـ27.
-- ✅ اختيار المحافظة شغال.
-- ✅ اختيار نوع التصوير شغال.
-- ✅ زر مسح الفلاتر.
-- ✅ أزرار الـ Quality أصبحت قابلة للضغط.
-- ✅ زر Drone أصبح يفتح الحجز مع "service=drone".
-- ✅ مفيش "id="drone"" ولا إضافة Category في Supabase مطلوبة للجزء ده.
+        
