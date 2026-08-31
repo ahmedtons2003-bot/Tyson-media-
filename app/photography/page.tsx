@@ -1,273 +1,252 @@
-import Link from "next/link";
+"use client";
 
-const categories = [
-{
-icon: "📸",
-title: "التصوير الفوتوغرافي",
-description: "أفراح، خطوبة، مناسبات وجلسات تصوير",
-},
-{
-icon: "💍",
-title: "Wedding Photography",
-description: "تغطية كاملة للفرح والزفاف",
-},
-{
-icon: "💐",
-title: "Engagement Photography",
-description: "تصوير الخطوبة والزفة",
-},
-{
-icon: "👤",
-title: "Portrait",
-description: "جلسات بورتريه وشخصية",
-},
-{
-icon: "👗",
-title: "Fashion Photography",
-description: "تصوير الفاشون والأزياء",
-},
-{
-icon: "🎥",
-title: "تصوير الفيديو",
-description: "تغطية فيديو للمناسبات والأفراح",
-},
-{
-icon: "🚁",
-title: "تصوير Drone",
-description: "تصوير جوي احترافي بالدرون",
-},
-{
-icon: "📱",
-title: "Reels & Social Media",
-description: "فيديوهات قصيرة للسوشيال ميديا",
-},
-{
-icon: "📦",
-title: "تصوير المنتجات",
-description: "تصوير المنتجات والإعلانات",
-},
+import Link from "next/link";
+import { useMemo, useState } from "react";
+
+const photographyCategories = [
+  {
+    icon: "💍",
+    title: "تصوير أفراح وWedding",
+    description: "تغطية كاملة للفرح من البداية للنهاية.",
+  },
+  {
+    icon: "💐",
+    title: "تصوير خطوبة",
+    description: "تصوير الخطوبة والاحتفالات واللحظات الخاصة.",
+  },
+  {
+    icon: "👤",
+    title: "Portrait",
+    description: "جلسات بورتريه فردية وشخصية.",
+  },
+  {
+    icon: "👗",
+    title: "Fashion",
+    description: "تصوير موديلز وملابس وبراندات وفاشون.",
+  },
+  {
+    icon: "💄",
+    title: "Makeup & Beauty",
+    description: "تصوير ميك أب أرتيست وBeauty Sessions.",
+  },
+  {
+    icon: "📦",
+    title: "تصوير منتجات",
+    description: "تصوير احترافي للمنتجات والمتاجر والبراندات.",
+  },
+  {
+    icon: "🎉",
+    title: "حفلات ومناسبات",
+    description: "تغطية أعياد الميلاد والحفلات والفعاليات.",
+  },
+  {
+    icon: "🏢",
+    title: "مؤتمرات وفعاليات",
+    description: "تغطية الشركات والمؤتمرات والفعاليات.",
+  },
+  {
+    icon: "🎥",
+    title: "تصوير فيديو",
+    description: "تصوير فيديو بجميع مستويات الجودة.",
+  },
+  {
+    icon: "🚁",
+    title: "تصوير Drone",
+    description: "تصوير جوي للمناسبات والأماكن والمشروعات.",
+  },
 ];
 
-const videoQuality = [
-{
-title: "Full HD",
-description: "تصوير فيديو بجودة Full HD",
-},
-{
-title: "4K",
-description: "تصوير فيديو احترافي بجودة 4K",
-},
+const videoQualities = [
+  "HD 720p",
+  "Full HD 1080p",
+  "2K",
+  "4K",
+  "6K",
+  "8K",
 ];
 
 export default function PhotographyPage() {
-return (
-<main dir="rtl" className="min-h-screen bg-[#fbfaf7] text-[#211f1c]">
+  const [selectedCategory, setSelectedCategory] = useState("الكل");
+  const [city, setCity] = useState("كل المدن");
 
-  {/* Header */}
-  <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur">
-    <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+  const categories = useMemo(() => {
+    if (selectedCategory === "الكل") {
+      return photographyCategories;
+    }
 
-      <Link href="/" className="text-2xl font-black">
-        Tyson <span className="text-[#b87333]">Media</span>
-      </Link>
+    return photographyCategories.filter(
+      (item) => item.title === selectedCategory
+    );
+  }, [selectedCategory]);
 
-      <Link
-        href="/"
-        className="rounded-xl bg-[#211f1c] px-4 py-2 text-sm font-bold text-white"
-      >
-        الرئيسية
-      </Link>
+  return (
+    <main dir="rtl" className="min-h-screen bg-[#fbfaf7] text-[#211f1c]">
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+          <Link href="/" className="text-2xl font-black">
+            Tyson <span className="text-[#b87333]">Media</span>
+          </Link>
 
-    </div>
-  </header>
+          <Link
+            href="/"
+            className="rounded-xl bg-[#211f1c] px-4 py-2 text-sm font-bold text-white"
+          >
+            الرئيسية
+          </Link>
+        </div>
+      </header>
 
-  {/* Hero */}
-  <section className="px-4 py-12 md:py-16">
-    <div className="mx-auto max-w-6xl overflow-hidden rounded-[2rem] bg-[#211f1c] px-6 py-12 text-center text-white md:px-12">
+      {/* Hero */}
+      <section className="mx-auto max-w-6xl px-4 py-10">
+        <div className="overflow-hidden rounded-[2rem] bg-[#211f1c] px-6 py-14 text-center text-white">
+          <div className="text-6xl">📸</div>
 
-      <div className="text-6xl">📸</div>
-
-      <h1 className="mt-5 text-4xl font-black md:text-5xl">
-        التصوير الاحترافي
-      </h1>
-
-      <p className="mx-auto mt-5 max-w-2xl leading-8 text-white/70">
-        اختار نوع التصوير المناسب لمناسبتك،
-        وشوف الخدمات المتاحة من مقدمي الخدمات على Tyson Media.
-      </p>
-
-    </div>
-  </section>
-
-  {/* Photography Categories */}
-  <section className="mx-auto max-w-6xl px-4 py-8">
-
-    <div className="mb-7">
-      <p className="text-sm font-bold text-[#b87333]">
-        اختر الخدمة
-      </p>
-
-      <h2 className="mt-2 text-3xl font-black">
-        أنواع التصوير
-      </h2>
-    </div>
-
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
-
-      {categories.map((category) => (
-        <Link
-          key={category.title}
-          href="/providers"
-          className="group rounded-3xl border bg-white p-7 transition hover:-translate-y-1 hover:shadow-lg"
-        >
-
-          <div className="text-5xl">
-            {category.icon}
-          </div>
-
-          <h3 className="mt-5 text-xl font-black">
-            {category.title}
-          </h3>
-
-          <p className="mt-3 leading-7 text-[#746f68]">
-            {category.description}
+          <p className="mt-5 text-sm font-bold tracking-wide text-[#d6a66f]">
+            TYSON MEDIA
           </p>
 
-          <span className="mt-5 inline-block font-black text-[#b87333]">
-            اكتشف الخدمات ←
-          </span>
+          <h1 className="mt-3 text-4xl font-black md:text-6xl">
+            كل أنواع التصوير في مكان واحد
+          </h1>
 
-        </Link>
-      ))}
+          <p className="mx-auto mt-5 max-w-2xl leading-8 text-white/70">
+            اختار نوع التصوير المناسب لك، قارن الخدمات والأسعار،
+            واختار مقدم الخدمة المناسب.
+          </p>
+        </div>
+      </section>
 
-    </div>
+      {/* Filters */}
+      <section className="mx-auto max-w-6xl px-4">
+        <div className="rounded-3xl border bg-white p-5">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-bold">
+                نوع التصوير
+              </label>
 
-  </section>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full rounded-xl border bg-white p-3 outline-none focus:border-[#b87333]"
+              >
+                <option>الكل</option>
 
-  {/* Video Quality */}
-  <section className="mx-auto max-w-6xl px-4 py-12">
+                {photographyCategories.map((item) => (
+                  <option key={item.title}>{item.title}</option>
+                ))}
+              </select>
+            </div>
 
-    <div className="rounded-[2rem] bg-[#eee6dc] p-7 md:p-10">
+            <div>
+              <label className="mb-2 block text-sm font-bold">
+                المدينة
+              </label>
 
-      <p className="text-sm font-bold text-[#b87333]">
-        جودة الفيديو
-      </p>
+              <select
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="w-full rounded-xl border bg-white p-3 outline-none focus:border-[#b87333]"
+              >
+                <option>كل المدن</option>
+                <option>الإسكندرية</option>
+                <option>القاهرة</option>
+                <option>الجيزة</option>
+                <option>البحيرة</option>
+                <option>الساحل</option>
+                <option>الغردقة</option>
+                <option>مطروح</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <h2 className="mt-2 text-3xl font-black">
-        اختار جودة تصوير الفيديو
-      </h2>
+      {/* Categories */}
+      <section className="mx-auto max-w-6xl px-4 py-10">
+        <div className="mb-7">
+          <p className="text-sm font-bold text-[#b87333]">
+            Photography
+          </p>
 
-      <p className="mt-3 text-[#746f68]">
-        الجودة تكون اختيار داخل خدمة الفيديو وليست قسمًا منفصلًا.
-      </p>
+          <h2 className="mt-2 text-3xl font-black">
+            اختار نوع التصوير
+          </h2>
+        </div>
 
-      <div className="mt-7 grid gap-5 md:grid-cols-2">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          {categories.map((item) => (
+            <button
+              key={item.title}
+              onClick={() => setSelectedCategory(item.title)}
+              className="group rounded-2xl border bg-white p-5 text-right transition hover:-translate-y-1 hover:shadow-lg"
+            >
+              <div className="flex h-28 items-center justify-center rounded-xl bg-[#eee6dc] text-5xl">
+                {item.icon}
+              </div>
 
-        {videoQuality.map((quality) => (
-          <Link
-            key={quality.title}
-            href="/providers"
-            className="rounded-2xl border bg-white p-6 transition hover:shadow-md"
-          >
+              <h3 className="mt-4 font-black">
+                {item.title}
+              </h3>
 
-            <div className="text-4xl">🎥</div>
+              <p className="mt-2 text-xs leading-5 text-[#746f68]">
+                {item.description}
+              </p>
 
-            <h3 className="mt-4 text-2xl font-black">
-              {quality.title}
-            </h3>
+              <span className="mt-4 block text-sm font-black text-[#b87333]">
+                اكتشف الخدمات ←
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
 
-            <p className="mt-2 text-[#746f68]">
-              {quality.description}
+      {/* Video Quality */}
+      {(selectedCategory === "الكل" ||
+        selectedCategory === "تصوير فيديو") && (
+        <section className="mx-auto max-w-6xl px-4 pb-10">
+          <div className="rounded-3xl bg-[#eee6dc] p-7">
+            <p className="text-sm font-bold text-[#b87333]">
+              Video Production
             </p>
 
-            <span className="mt-5 inline-block font-bold text-[#b87333]">
-              مشاهدة الخدمات ←
-            </span>
+            <h2 className="mt-2 text-3xl font-black">
+              تصوير فيديو بجميع الـ Quality 🎥
+            </h2>
 
-          </Link>
-        ))}
+            <p className="mt-3 text-[#746f68]">
+              اختار الجودة المناسبة لمشروعك أو مناسبتك.
+            </p>
 
-      </div>
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
+              {videoQualities.map((quality) => (
+                <div
+                  key={quality}
+                  className="rounded-xl border bg-white p-4 text-center font-black"
+                >
+                  {quality}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
-    </div>
+      {/* Drone */}
+      {(selectedCategory === "الكل" ||
+        selectedCategory === "تصوير Drone") && (
+        <section className="mx-auto max-w-6xl px-4 pb-10">
+          <div className="rounded-3xl bg-[#211f1c] p-7 text-white">
+            <div className="text-5xl">🚁</div>
 
-  </section>
+            <h2 className="mt-4 text-3xl font-black">
+              تصوير Drone
+            </h2>
 
-  {/* Featured Services */}
-  <section className="mx-auto max-w-6xl px-4 pb-16">
+            <p className="mt-3 max-w-2xl leading-7 text-white/70">
+              تصوير جوي للمناسبات، الأفراح، الفنادق، العقارات،
+              الأماكن السياحية والمشروعات.
+            </p>
 
-    <div className="mb-7">
-      <p className="text-sm font-bold text-[#b87333]">
-        Tyson Media
-      </p>
-
-      <h2 className="mt-2 text-3xl font-black">
-        جهّز تغطية مناسبتك
-      </h2>
-    </div>
-
-    <div className="grid gap-5 md:grid-cols-3">
-
-      <div className="rounded-3xl border bg-white p-7">
-        <div className="text-5xl">📸</div>
-
-        <h3 className="mt-5 text-xl font-black">
-          تصوير فوتوغرافي
-        </h3>
-
-        <p className="mt-3 leading-7 text-[#746f68]">
-          صور احترافية للفرح والخطوبة والمناسبات والجلسات.
-        </p>
-      </div>
-
-      <div className="rounded-3xl border bg-white p-7">
-        <div className="text-5xl">🎥</div>
-
-        <h3 className="mt-5 text-xl font-black">
-          تصوير فيديو
-        </h3>
-
-        <p className="mt-3 leading-7 text-[#746f68]">
-          تغطية فيديو كاملة، Highlights وفيديوهات سينمائية.
-        </p>
-      </div>
-
-      <div className="rounded-3xl border bg-white p-7">
-        <div className="text-5xl">🚁</div>
-
-        <h3 className="mt-5 text-xl font-black">
-          تصوير Drone
-        </h3>
-
-        <p className="mt-3 leading-7 text-[#746f68]">
-          لقطات جوية مميزة للفرح والمكان والمناسبة.
-        </p>
-      </div>
-
-    </div>
-
-  </section>
-
-  {/* Footer */}
-  <footer className="border-t bg-white">
-    <div className="mx-auto max-w-6xl px-4 py-8 text-center">
-
-      <div className="text-xl font-black">
-        Tyson <span className="text-[#b87333]">Media</span>
-      </div>
-
-      <p className="mt-2 text-sm text-[#746f68]">
-        كل خدمات التصوير والمناسبات في مكان واحد.
-      </p>
-
-      <p className="mt-5 text-xs text-[#746f68]">
-        © 2026 Tyson Media — جميع الحقوق محفوظة
-      </p>
-
-    </div>
-  </footer>
-
-</main>
-
-);
-}
+            <
