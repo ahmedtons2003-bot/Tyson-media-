@@ -9,24 +9,25 @@ type Service = {
   title: string;
   price: number;
   provider_id: string;
+
   deposit_required: boolean;
   deposit_amount: number;
   deposit_payment_method: string | null;
+
   provider?: {
     business_name: string;
     city: string | null;
   } | null;
 };
 
-const WALLET_NUMBERS = [
-  "01208338744",
-  "01208338919",
-];
-
 export default function BookingPage() {
   const [service, setService] = useState<Service | null>(null);
+
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+
   const [message, setMessage] = useState("");
+  const [success, setSuccess] = useState(false);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -36,10 +37,9 @@ export default function BookingPage() {
   const [eventType, setEventType] = useState("");
   const [notes, setNotes] = useState("");
 
+  // بيانات الدفع
   const [walletNumber, setWalletNumber] = useState("");
-  const [transactionId, setTransactionId] = useState("");
-
-  const [sending, setSending] = useState(false);
+  const [paymentReference, setPaymentReference] = useState("");
 
   useEffect(() => {
     async function loadService() {
@@ -104,36 +104,43 @@ export default function BookingPage() {
 
     if (!service) return;
 
-    const depositAmount = service.deposit_required
-      ? Number(service.deposit_amount || 0)
-      : 0;
+    setMessage("");
+    setSuccess(false);
 
     if (
-      !name ||
-      !phone ||
+      !name.trim() ||
+      !phone.trim() ||
       !date ||
       !time ||
-      !location ||
+      !location.trim() ||
       !eventType
     ) {
       setMessage("من فضلك املأ جميع البيانات المطلوبة.");
       return;
     }
 
+    const depositAmount = service.deposit_required
+      ? Number(service.deposit_amount || 0)
+      : 0;
+
+    // لو فيه عربون لازم بيانات الدفع
     if (depositAmount > 0) {
-      if (!walletNumber) {
-        setMessage("من فضلك اختر رقم المحفظة الذي تم التحويل إليه.");
+      if (!walletNumber.trim()) {
+        setMessage(
+          "من فضلك اكتب رقم المحفظة التي تم الدفع منها."
+        );
         return;
       }
 
-      if (!transactionId.trim()) {
-        setMessage("من فضلك اكتب رقم عملية تحويل العربون.");
+      if (!paymentReference.trim()) {
+        setMessage(
+          "من فضلك اكتب رقم عملية التحويل."
+        );
         return;
       }
     }
 
     setSending(true);
-    setMessage("");
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -151,7 +158,10 @@ export default function BookingPage() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      setMessage("يجب تسجيل الدخول أولًا لإرسال الحجز.");
+      setMessage(
+        "يجب تسجيل الدخول أولًا لإرسال الحجز."
+      );
+
       setSending(false);
       return;
     }
@@ -162,11 +172,6 @@ export default function BookingPage() {
         .toString(36)
         .substring(2, 8)
         .toUpperCase();
-
-    const remainingAmount = Math.max(
-      Number(service.price || 0) - depositAmount,
-      0
-    );
 
     const depositStatus =
       depositAmount > 0 ? "pending" : "cancelled";
@@ -180,45 +185,66 @@ export default function BookingPage() {
       .from("bookings")
       .insert({
         booking_code: bookingCode,
+
         customer_id: user.id,
+
         provider_id: service.provider_id,
+
         service_id: service.id,
+
         booking_date: date,
+
         booking_time: time,
-        customer_name: name,
-        phone,
-        location,
+
+        customer_name: name.trim(),
+
+        phone: phone.trim(),
+
+        location: location.trim(),
+
         event_type: eventType,
-        notes: notes || null,
+
+        notes: notes.trim() || null,
 
         deposit_amount: depositAmount,
+
         deposit_status: depositStatus,
+
         deposit_payment_method: paymentMethod,
 
-        wallet_number: depositAmount > 0
-          ? walletNumber
-          : null,
+        payment_wallet_number:
+          depositAmount > 0
+            ? walletNumber.trim()
+            : null,
 
-        transaction_id: depositAmount > 0
-          ? transactionId.trim()
-          : null,
+        payment_reference:
+          depositAmount > 0
+            ? paymentReference.trim()
+            : null,
+
+        payment_note:
+          depositAmount > 0
+            ? "تم الدفع عن طريق Orange Cash - في انتظار مراجعة التحويل"
+            : null,
       });
 
     if (error) {
       setMessage(
-        "حدث خطأ أثناء إرسال الحجز: " + error.message
+        "حدث خطأ أثناء إرسال الحجز: " +
+          error.message
       );
+
       setSending(false);
       return;
     }
 
+    setSuccess(true);
+
     if (depositAmount > 0) {
       setMessage(
-        `تم إرسال طلب الحجز وإثبات دفع العربون ✅ رقم الحجز: ${bookingCode} — العربون: ${depositAmount.toLocaleString(
+        `تم إرسال طلب الحجز بنجاح ✅ رقم الحجز: ${bookingCode} — العربون ${depositAmount.toLocaleString(
           "ar-EG"
-        )} ج.م — المتبقي: ${remainingAmount.toLocaleString(
-          "ar-EG"
-        )} ج.م. سيتم مراجعة التحويل وتأكيد الحجز.`
+        )} ج.م في انتظار مراجعة التحويل.`
       );
     } else {
       setMessage(
@@ -234,7 +260,7 @@ export default function BookingPage() {
     setEventType("");
     setNotes("");
     setWalletNumber("");
-    setTransactionId("");
+    setPaymentReference("");
 
     setSending(false);
   }
@@ -278,8 +304,12 @@ export default function BookingPage() {
     ? Number(service.deposit_amount || 0)
     : 0;
 
+  const servicePrice = Number(
+    service.price || 0
+  );
+
   const remainingAmount = Math.max(
-    Number(service.price || 0) - depositAmount,
+    servicePrice - depositAmount,
     0
   );
 
@@ -311,10 +341,11 @@ export default function BookingPage() {
 
       <section className="mx-auto max-w-3xl px-4 py-10">
 
-        {/* Service Information */}
+        {/* معلومات الخدمة */}
         <div className="rounded-3xl bg-[#211f1c] p-7 text-white">
+
           <p className="text-sm opacity-70">
-            📸 حجز خدمة
+            📋 حجز خدمة
           </p>
 
           <h1 className="mt-2 text-3xl font-black">
@@ -330,7 +361,7 @@ export default function BookingPage() {
               : ""}
           </p>
 
-          <div className="mt-5 rounded-2xl bg-white/10 p-5">
+          <div className="mt-6 rounded-2xl bg-white/10 p-5">
 
             <div className="flex items-center justify-between">
               <span className="text-white/70">
@@ -338,7 +369,7 @@ export default function BookingPage() {
               </span>
 
               <span className="text-2xl font-black">
-                {Number(service.price).toLocaleString(
+                {servicePrice.toLocaleString(
                   "ar-EG"
                 )}{" "}
                 ج.م
@@ -363,6 +394,7 @@ export default function BookingPage() {
                 </div>
 
                 <div className="mt-3 flex items-center justify-between text-sm">
+
                   <span className="text-white/60">
                     المتبقي
                   </span>
@@ -373,21 +405,91 @@ export default function BookingPage() {
                     )}{" "}
                     ج.م
                   </span>
+
                 </div>
               </>
             )}
           </div>
+
+          {/* الدفع بالمحفظة */}
+          {depositAmount > 0 && (
+            <div className="mt-5 rounded-2xl border border-[#b87333]/50 bg-[#b87333]/10 p-5">
+
+              <p className="text-lg font-black">
+                🟠 دفع العربون عن طريق Orange Cash
+              </p>
+
+              <p className="mt-2 text-sm leading-6 text-white/70">
+                لتحويل العربون، استخدم أحد أرقام
+                Orange Cash التالية:
+              </p>
+
+              <div className="mt-4 space-y-3">
+
+                <div className="rounded-xl bg-white p-4 text-center">
+                  <p className="text-xs font-bold text-gray-500">
+                    رقم المحفظة الأول
+                  </p>
+
+                  <p
+                    dir="ltr"
+                    className="mt-1 text-xl font-black text-[#211f1c]"
+                  >
+                    01208338744
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-white p-4 text-center">
+                  <p className="text-xs font-bold text-gray-500">
+                    رقم المحفظة الثاني
+                  </p>
+
+                  <p
+                    dir="ltr"
+                    className="mt-1 text-xl font-black text-[#211f1c]"
+                  >
+                    01208338919
+                  </p>
+                </div>
+
+              </div>
+
+              <div className="mt-4 rounded-xl bg-white/10 p-4">
+
+                <p className="font-black">
+                  💰 مبلغ التحويل
+                </p>
+
+                <p className="mt-1 text-2xl font-black text-[#d99b63]">
+                  {depositAmount.toLocaleString(
+                    "ar-EG"
+                  )}{" "}
+                  ج.م
+                </p>
+
+              </div>
+
+              <p className="mt-4 text-xs leading-6 text-white/60">
+                بعد التحويل، اكتب رقم المحفظة
+                التي دفعت منها ورقم عملية التحويل
+                في البيانات بالأسفل.
+              </p>
+
+            </div>
+          )}
+
         </div>
 
+        {/* فورم الحجز */}
         <form
           onSubmit={handleBooking}
           className="mt-6 rounded-3xl border bg-white p-6"
         >
+
           <h2 className="text-xl font-black">
             بيانات الحجز
           </h2>
 
-          {/* Name */}
           <label className="mt-6 block text-sm font-bold">
             الاسم *
           </label>
@@ -401,7 +503,6 @@ export default function BookingPage() {
             placeholder="اكتب اسمك"
           />
 
-          {/* Phone */}
           <label className="mt-4 block text-sm font-bold">
             رقم الهاتف *
           </label>
@@ -416,7 +517,6 @@ export default function BookingPage() {
             placeholder="01xxxxxxxxx"
           />
 
-          {/* Date */}
           <label className="mt-4 block text-sm font-bold">
             تاريخ المناسبة *
           </label>
@@ -430,7 +530,6 @@ export default function BookingPage() {
             className="mt-2 w-full rounded-xl border p-3 outline-none focus:border-[#b87333]"
           />
 
-          {/* Time */}
           <label className="mt-4 block text-sm font-bold">
             الوقت *
           </label>
@@ -444,7 +543,6 @@ export default function BookingPage() {
             className="mt-2 w-full rounded-xl border p-3 outline-none focus:border-[#b87333]"
           />
 
-          {/* Location */}
           <label className="mt-4 block text-sm font-bold">
             مكان المناسبة *
           </label>
@@ -458,7 +556,6 @@ export default function BookingPage() {
             placeholder="مثال: الإسكندرية"
           />
 
-          {/* Event Type */}
           <label className="mt-4 block text-sm font-bold">
             نوع المناسبة *
           </label>
@@ -499,119 +596,52 @@ export default function BookingPage() {
             </option>
           </select>
 
-          {/* Deposit Payment */}
+          {/* بيانات تحويل العربون */}
           {depositAmount > 0 && (
-            <div className="mt-7 rounded-2xl border-2 border-[#b87333]/30 bg-[#fbfaf7] p-5">
+            <div className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-5">
 
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">
-                  💳
-                </span>
+              <h3 className="font-black text-orange-900">
+                🟠 بيانات تحويل العربون
+              </h3>
 
-                <h3 className="font-black">
-                  دفع العربون
-                </h3>
-              </div>
-
-              <p className="mt-3 text-sm leading-6 text-[#746f68]">
-                يجب دفع العربون المطلوب قبل تأكيد
-                الحجز النهائي.
-              </p>
-
-              <div className="mt-4 rounded-xl bg-white p-4">
-
-                <p className="text-sm font-bold text-[#746f68]">
-                  طريقة الدفع
-                </p>
-
-                <p className="mt-1 text-lg font-black">
-                  Orange Cash 🟠
-                </p>
-
-                <p className="mt-2 text-sm text-[#746f68]">
-                  قيمة العربون:
-                </p>
-
-                <p className="text-2xl font-black text-[#b87333]">
-                  {depositAmount.toLocaleString(
-                    "ar-EG"
-                  )}{" "}
-                  ج.م
-                </p>
-              </div>
-
-              <div className="mt-4">
-
-                <p className="text-sm font-bold">
-                  حول العربون على أحد أرقام Orange Cash:
-                </p>
-
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-
-                  {WALLET_NUMBERS.map((number) => (
-                    <button
-                      key={number}
-                      type="button"
-                      onClick={() =>
-                        setWalletNumber(number)
-                      }
-                      className={`rounded-xl border-2 p-4 text-center transition ${
-                        walletNumber === number
-                          ? "border-[#b87333] bg-[#b87333]/10"
-                          : "border-gray-200 bg-white hover:border-[#b87333]"
-                      }`}
-                    >
-                      <div className="text-sm text-[#746f68]">
-                        Orange Cash
-                      </div>
-
-                      <div className="mt-1 text-lg font-black">
-                        {number}
-                      </div>
-
-                      {walletNumber === number && (
-                        <div className="mt-2 text-sm font-bold text-[#b87333]">
-                          ✓ تم اختيار الرقم
-                        </div>
-                      )}
-                    </button>
-                  ))}
-
-                </div>
-              </div>
-
-              <div className="mt-5 rounded-xl bg-[#211f1c] p-4 text-white">
-
-                <p className="font-black">
-                  ⚠️ مهم
-                </p>
-
-                <p className="mt-2 text-sm leading-6 text-white/70">
-                  بعد تحويل مبلغ العربون، اكتب رقم عملية
-                  التحويل في الخانة التالية حتى نتمكن
-                  من مراجعة الدفع وتأكيد الحجز.
-                </p>
-
-              </div>
-
-              <label className="mt-5 block text-sm font-bold">
-                رقم عملية تحويل العربون *
+              <label className="mt-4 block text-sm font-bold text-gray-800">
+                رقم المحفظة التي دفعت منها *
               </label>
 
               <input
-                value={transactionId}
+                type="tel"
+                value={walletNumber}
                 onChange={(e) =>
-                  setTransactionId(e.target.value)
+                  setWalletNumber(e.target.value)
                 }
-                className="mt-2 w-full rounded-xl border p-3 outline-none focus:border-[#b87333]"
-                placeholder="اكتب رقم العملية بعد التحويل"
+                className="mt-2 w-full rounded-xl border bg-white p-3 outline-none focus:border-[#b87333]"
+                placeholder="01xxxxxxxxx"
               />
+
+              <label className="mt-4 block text-sm font-bold text-gray-800">
+                رقم عملية التحويل *
+              </label>
+
+              <input
+                value={paymentReference}
+                onChange={(e) =>
+                  setPaymentReference(
+                    e.target.value
+                  )
+                }
+                className="mt-2 w-full rounded-xl border bg-white p-3 outline-none focus:border-[#b87333]"
+                placeholder="اكتب رقم العملية"
+              />
+
+              <p className="mt-3 text-xs leading-5 text-gray-600">
+                ⚠️ تأكد من تحويل مبلغ العربون
+                كاملًا قبل إرسال طلب الحجز.
+              </p>
 
             </div>
           )}
 
-          {/* Notes */}
-          <label className="mt-5 block text-sm font-bold">
+          <label className="mt-4 block text-sm font-bold">
             ملاحظات
           </label>
 
@@ -624,23 +654,27 @@ export default function BookingPage() {
             placeholder="أي تفاصيل إضافية..."
           />
 
-          {/* Message */}
           {message && (
-            <div className="mt-5 rounded-xl bg-[#fbfaf7] p-4 text-center text-sm font-bold leading-6">
+            <div
+              className={`mt-5 rounded-xl p-4 text-center text-sm font-bold leading-6 ${
+                success
+                  ? "bg-green-50 text-green-700"
+                  : "bg-red-50 text-red-700"
+              }`}
+            >
               {message}
             </div>
           )}
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={sending}
-            className="mt-6 w-full rounded-xl bg-[#211f1c] px-4 py-4 font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-6 w-full rounded-xl bg-[#211f1c] px-4 py-4 font-black text-white transition hover:bg-[#332f2b] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {sending
               ? "جاري إرسال الحجز..."
               : depositAmount > 0
-              ? `تأكيد الحجز وإرسال العربون — ${depositAmount.toLocaleString(
+              ? `تأكيد الحجز وإرسال بيانات الدفع — ${depositAmount.toLocaleString(
                   "ar-EG"
                 )} ج.م`
               : "تأكيد طلب الحجز"}
