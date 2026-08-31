@@ -11,6 +11,7 @@ type Service = {
   price: number;
   duration_minutes: number | null;
   image_url: string | null;
+  provider_id: string;
   provider: {
     business_name: string;
     city: string | null;
@@ -44,6 +45,7 @@ export default function PhotographyPage() {
           price,
           duration_minutes,
           image_url,
+          provider_id,
           provider:providers (
             business_name,
             city
@@ -149,27 +151,4 @@ export default function PhotographyPage() {
                       ⭐ 4.9
                     </div>
 
-                    <h3 className="text-xl font-black">
-                      {service.title}
-                    </h3>
-
-                    <p className="mt-3 min-h-12 text-sm leading-6 text-[#746f68]">
-                      {service.description}
-                    </p>
-
-                    <div className="mt-5 space-y-2 text-sm text-[#746f68]">
-                      <p>
-                        🏪{" "}
-                        <span className="font-bold text-[#211f1c]">
-                          {service.provider?.business_name ||
-                            "مقدم خدمة"}
-                        </span>
-                      </p>
-
-                      {service.provider?.city && (
-                        <p>📍 {service.provider.city}</p>
-                      )}
-
-                      {service.duration_minutes && (
-                        <p>
-                         
+                    <h3 className="
