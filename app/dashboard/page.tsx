@@ -10,7 +10,7 @@ type Booking = {
   booking_date: string;
   booking_time: string;
   customer_name: string;
-  event_type: string;
+  event_type: string | null;
   status: string | null;
   service?: {
     title: string;
@@ -76,8 +76,7 @@ export default function DashboardPage() {
 
       if (error) {
         setErrorMessage(
-          "حدث خطأ أثناء تحميل الحجوزات: " +
-            error.message
+          "حدث خطأ أثناء تحميل الحجوزات: " + error.message
         );
         setBookings([]);
       } else {
@@ -102,6 +101,9 @@ export default function DashboardPage() {
 
       case "completed":
         return "مكتمل";
+
+      case "pending":
+        return "قيد المراجعة";
 
       default:
         return "قيد المراجعة";
@@ -150,6 +152,9 @@ export default function DashboardPage() {
       case "suit":
         return "بدلة";
 
+      case "other":
+        return "أخرى";
+
       default:
         return eventType || "غير محدد";
     }
@@ -170,6 +175,7 @@ export default function DashboardPage() {
       dir="rtl"
       className="min-h-screen bg-[#fbfaf7]"
     >
+      {/* Header */}
       <header className="border-b bg-white px-4 py-5">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <Link
@@ -225,9 +231,7 @@ export default function DashboardPage() {
             </p>
 
             <p className="mt-2 text-3xl font-black">
-              {loading
-                ? "..."
-                : bookings.length}
+              {loading ? "..." : bookings.length}
             </p>
           </div>
 
@@ -241,8 +245,7 @@ export default function DashboardPage() {
                 ? "..."
                 : bookings.filter(
                     (booking) =>
-                      booking.status ===
-                      "confirmed"
+                      booking.status === "confirmed"
                   ).length}
             </p>
           </div>
@@ -258,8 +261,7 @@ export default function DashboardPage() {
                 : bookings.filter(
                     (booking) =>
                       !booking.status ||
-                      booking.status ===
-                        "pending"
+                      booking.status === "pending"
                   ).length}
             </p>
           </div>
@@ -333,8 +335,7 @@ export default function DashboardPage() {
                       </h3>
 
                       <p className="mt-2 text-sm text-[#746f68]">
-                        👤{" "}
-                        {booking.customer_name}
+                        👤 {booking.customer_name}
                       </p>
 
                       <p className="mt-2 text-sm text-[#746f68]">
@@ -345,8 +346,7 @@ export default function DashboardPage() {
                       </p>
 
                       <p className="mt-2 text-sm text-[#746f68]">
-                        🕐{" "}
-                        {booking.booking_time}
+                        🕐 {booking.booking_time}
                       </p>
 
                       <p className="mt-2 text-sm text-[#746f68]">
@@ -359,10 +359,7 @@ export default function DashboardPage() {
                       {booking.provider?.business_name && (
                         <p className="mt-2 text-sm text-[#746f68]">
                           📸 مقدم الخدمة:{" "}
-                          {
-                            booking.provider
-                              .business_name
-                          }
+                          {booking.provider.business_name}
                         </p>
                       )}
 
@@ -386,9 +383,7 @@ export default function DashboardPage() {
                         <span className="rounded-full bg-white px-4 py-2 text-xs font-bold">
                           {Number(
                             booking.service.price
-                          ).toLocaleString(
-                            "ar-EG"
-                          )}{" "}
+                          ).toLocaleString("ar-EG")}{" "}
                           ج.م
                         </span>
                       )}
