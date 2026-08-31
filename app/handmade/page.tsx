@@ -1,129 +1,232 @@
-import Link from "next/link";
+"use client";
 
-const products = [
-  {
-    name: "سلسلة هاند ميد",
-    price: "450 ج.م",
-    category: "سلاسل وإكسسوارات",
-    icon: "📿",
-  },
-  {
-    name: "شنطة هاند ميد",
-    price: "850 ج.م",
-    category: "شنط هاند ميد",
-    icon: "👜",
-  },
-  {
-    name: "شمعة ديكورية",
-    price: "250 ج.م",
-    category: "شموع",
-    icon: "🕯️",
-  },
-  {
-    name: "بوكس هدايا",
-    price: "600 ج.م",
-    category: "هدايا",
-    icon: "🎁",
-  },
-  {
-    name: "جاتوه مناسبات",
-    price: "700 ج.م",
-    category: "جاتوه وحلويات",
-    icon: "🎂",
-  },
-  {
-    name: "تنسيق ورد",
-    price: "500 ج.م",
-    category: "ورد وتنسيقات",
-    icon: "🌹",
-  },
-];
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+type Service = {
+id: string;
+title: string;
+description: string | null;
+price: number;
+duration_minutes: number | null;
+image_url: string | null;
+provider_id: string;
+provider: {
+business_name: string;
+city: string | null;
+} | null;
+};
 
 export default function HandmadePage() {
-  return (
-    <main dir="rtl" className="min-h-screen bg-[#fbfaf7]">
-      <header className="border-b bg-white px-4 py-5">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <Link href="/" className="text-2xl font-black">
-            Tyson <span className="text-[#b87333]">Media</span>
-          </Link>
+const [services, setServices] = useState<Service[]>([]);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState("");
 
-          <Link
-            href="/"
-            className="rounded-xl bg-[#211f1c] px-4 py-2 text-sm font-bold text-white"
-          >
-            الرئيسية
-          </Link>
+useEffect(() => {
+async function loadServices() {
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    setError("إعدادات Supabase غير موجودة.");
+    setLoading(false);
+    return;
+  }
+
+  const supabase = createClient(url, key);
+
+  const { data, error } = await supabase
+    .from("services")
+    .select(`
+      id,
+      title,
+      description,
+      price,
+      duration_minutes,
+      image_url,
+      provider_id,
+      provider:providers (
+        business_name,
+        city
+      )
+    `)
+    .eq("is_active", true)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    setError(error.message);
+  } else {
+    setServices((data as unknown as Service[]) || []);
+  }
+
+  setLoading(false);
+}
+
+loadServices();
+
+}, []);
+
+return (
+<main
+dir="rtl"
+className="min-h-screen bg-[#fbfaf7] text-[#211f1c]"
+>
+<header className="border-b bg-white">
+<div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+<Link
+href="/"
+className="text-2xl font-black"
+>
+Tyson{" "}
+<span className="text-[#b87333]">
+Media
+</span>
+</Link>
+
+      <Link
+        href="/"
+        className="rounded-xl bg-[#211f1c] px-4 py-2 text-sm font-bold text-white"
+      >
+        الرئيسية
+      </Link>
+    </div>
+  </header>
+
+  <section className="mx-auto max-w-6xl px-4 py-10">
+    <div className="rounded-[2rem] bg-[#211f1c] px-6 py-14 text-center text-white">
+      <div className="text-6xl">🎁</div>
+
+      <h1 className="mt-5 text-4xl font-black md:text-5xl">
+        الهاند ميد والمنتجات
+      </h1>
+
+      <p className="mx-auto mt-4 max-w-2xl text-white/70">
+        اكتشف المنتجات اليدوية والهدايا والإكسسوارات
+        واختر ما يناسب مناسبتك.
+      </p>
+    </div>
+  </section>
+
+  <section className="mx-auto max-w-6xl px-4 pb-16">
+    {loading && (
+      <div className="rounded-2xl border bg-white p-8 text-center font-bold">
+        جاري تحميل المنتجات...
+      </div>
+    )}
+
+    {error && (
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-center font-bold text-red-700">
+        حدث خطأ: {error}
+      </div>
+    )}
+
+    {!loading &&
+      !error &&
+      services.length === 0 && (
+        <div className="rounded-2xl border bg-white p-8 text-center">
+          <p className="font-black">
+            لا توجد منتجات متاحة حاليًا.
+          </p>
+
+          <p className="mt-2 text-sm text-[#746f68]">
+            سيتم إضافة المنتجات قريبًا.
+          </p>
         </div>
-      </header>
+      )}
 
-      <section className="mx-auto max-w-6xl px-4 py-12">
-        <h1 className="text-4xl font-black">متجر Handmade 🧵</h1>
+    {!loading &&
+      !error &&
+      services.length > 0 && (
+        <>
+          <div className="mb-7">
+            <p className="text-sm font-bold text-[#b87333]">
+              Handmade
+            </p>
 
-        <p className="mt-3 text-[#746f68]">
-          اكتشف منتجات هاند ميد مميزة من صناع ومقدمي خدمات تجريبيين.
-        </p>
+            <h2 className="mt-2 text-3xl font-black">
+              المنتجات المتاحة
+            </h2>
+          </div>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          <select className="rounded-xl border bg-white p-3">
-            <option>كل التصنيفات</option>
-            <option>جاتوه وحلويات</option>
-            <option>سلاسل وإكسسوارات</option>
-            <option>شنط هاند ميد</option>
-            <option>هدايا</option>
-            <option>ورد وتنسيقات</option>
-            <option>شموع</option>
-          </select>
-
-          <select className="rounded-xl border bg-white p-3">
-            <option>كل الأسعار</option>
-            <option>أقل من 500 ج.م</option>
-            <option>500 - 1000 ج.م</option>
-            <option>أكثر من 1000 ج.م</option>
-          </select>
-
-          <input
-            type="search"
-            placeholder="ابحث عن منتج..."
-            className="rounded-xl border bg-white p-3 outline-none"
-          />
-        </div>
-
-        <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3">
-          {products.map((product) => (
-            <article
-              key={product.name}
-              className="overflow-hidden rounded-2xl border bg-white shadow-sm"
-            >
-              <div className="flex h-44 items-center justify-center bg-[#eee6dc] text-6xl">
-                {product.icon}
-              </div>
-
-              <div className="p-4">
-                <p className="text-xs text-[#746f68]">
-                  {product.category}
-                </p>
-
-                <h2 className="mt-2 font-black">
-                  {product.name}
-                </h2>
-
-                <div className="mt-2 text-sm">
-                  ⭐ 4.8
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {services.map((service) => (
+              <article
+                key={service.id}
+                className="overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              >
+                <div className="flex h-52 items-center justify-center bg-[#eee6dc] text-7xl">
+                  {service.image_url ? (
+                    <img
+                      src={service.image_url}
+                      alt={service.title}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    "🎁"
+                  )}
                 </div>
 
-                <div className="mt-3 font-black text-[#b87333]">
-                  {product.price}
-                </div>
+                <div className="p-6">
+                  <div className="mb-2 text-sm font-bold text-[#b87333]">
+                    🛍️ Handmade
+                  </div>
 
-                <button className="mt-4 w-full rounded-xl bg-[#211f1c] px-4 py-3 font-bold text-white">
-                  أضف للسلة
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-    </main>
-  );
+                  <h3 className="text-xl font-black">
+                    {service.title}
+                  </h3>
+
+                  <p className="mt-3 min-h-12 text-sm leading-6 text-[#746f68]">
+                    {service.description ||
+                      "منتج مميز من تايسون ميديا."}
+                  </p>
+
+                  <div className="mt-5 space-y-2 text-sm text-[#746f68]">
+                    <p>
+                      🏪{" "}
+                      <span className="font-bold text-[#211f1c]">
+                        {service.provider
+                          ?.business_name ||
+                          "مقدم الخدمة"}
+                      </span>
+                    </p>
+
+                    {service.provider?.city && (
+                      <p>
+                        📍 {service.provider.city}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mt-6 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs text-[#746f68]">
+                        السعر
+                      </p>
+
+                      <p className="text-xl font-black">
+                        {Number(
+                          service.price || 0
+                        ).toLocaleString("ar-EG")}{" "}
+                        ج.م
+                      </p>
+                    </div>
+
+                    <Link
+                      href={`/bookings?service=${service.id}`}
+                      className="rounded-xl bg-[#211f1c] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b87333]"
+                    >
+                      اطلب الآن
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </>
+      )}
+  </section>
+</main>
+
+);
 }
