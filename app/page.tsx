@@ -151,4 +151,57 @@ export default function PhotographyPage() {
                       ⭐ 4.9
                     </div>
 
-                    <h3 className="
+                    <h3 className="text-xl font-black">
+                      {service.title}
+                    </h3>
+
+                    <p className="mt-3 min-h-12 text-sm leading-6 text-[#746f68]">
+                      {service.description || "خدمة تصوير احترافية."}
+                    </p>
+
+                    <div className="mt-5 space-y-2 text-sm text-[#746f68]">
+                      <p>
+                        🏪{" "}
+                        <span className="font-bold text-[#211f1c]">
+                          {service.provider?.business_name ||
+                            "مقدم خدمة"}
+                        </span>
+                      </p>
+
+                      {service.provider?.city && (
+                        <p>📍 {service.provider.city}</p>
+                      )}
+
+                      {service.duration_minutes && (
+                        <p>⏱️ مدة الخدمة: {service.duration_minutes} دقيقة</p>
+                      )}
+                    </div>
+
+                    <div className="mt-6 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs text-[#746f68]">
+                          يبدأ من
+                        </p>
+
+                        <p className="text-xl font-black">
+                          {Number(service.price).toLocaleString("ar-EG")} ج.م
+                        </p>
+                      </div>
+
+                      <Link
+                        href={`/bookings?service=${service.id}`}
+                        className="rounded-xl bg-[#211f1c] px-5 py-3 text-sm font-black text-white transition hover:bg-[#b87333]"
+                      >
+                        احجز الآن
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
+        )}
+      </section>
+    </main>
+  );
+}
