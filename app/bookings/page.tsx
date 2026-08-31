@@ -9,6 +9,9 @@ type Service = {
   title: string;
   price: number;
   provider_id: string;
+  deposit_required: boolean;
+  deposit_amount: number;
+  deposit_payment_method: string | null;
   provider?: {
     business_name: string;
     city: string | null;
@@ -27,6 +30,7 @@ export default function BookingPage() {
   const [location, setLocation] = useState("");
   const [eventType, setEventType] = useState("");
   const [notes, setNotes] = useState("");
+
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
@@ -59,6 +63,9 @@ export default function BookingPage() {
           title,
           price,
           provider_id,
+          deposit_required,
+          deposit_amount,
+          deposit_payment_method,
           provider:providers (
             business_name,
             city
@@ -69,7 +76,9 @@ export default function BookingPage() {
         .single();
 
       if (error) {
-        setMessage("لم نتمكن من تحميل الخدمة: " + error.message);
+        setMessage(
+          "لم نتمكن من تحميل الخدمة: " + error.message
+        );
       } else {
         setService(data as unknown as Service);
       }
@@ -130,28 +139,54 @@ export default function BookingPage() {
         .substring(2, 8)
         .toUpperCase();
 
-    const { error } = await supabase.from("bookings").insert({
-      booking_code: bookingCode,
-      customer_id: user.id,
-      provider_id: service.provider_id,
-      service_id: service.id,
-      booking_date: date,
-      booking_time: time,
-      customer_name: name,
-      phone,
-      location,
-      event_type: eventType,
-      notes: notes || null,
-    });
+    const depositAmount = service.deposit_required
+      ? Number(service.deposit_amount || 0)
+      : 0;
+
+    const depositStatus =
+      depositAmount > 0 ? "pending" : "cancelled";
+
+    const paymentMethod =
+      depositAmount > 0
+        ? service.deposit_payment_method || "wallet"
+        : null;
+
+    const { error } = await supabase
+      .from("bookings")
+      .insert({
+        booking_code: bookingCode,
+        customer_id: user.id,
+        provider_id: service.provider_id,
+        service_id: service.id,
+        booking_date: date,
+        booking_time: time,
+        customer_name: name,
+        phone,
+        location,
+        event_type: eventType,
+        notes: notes || null,
+
+        deposit_amount: depositAmount,
+        deposit_status: depositStatus,
+        deposit_payment_method: paymentMethod,
+      });
 
     if (error) {
       setMessage(
         "حدث خطأ أثناء إرسال الحجز: " + error.message
       );
     } else {
-      setMessage(
-        `تم إرسال طلب الحجز بنجاح ✅ رقم الحجز: ${bookingCode}`
-      );
+      if (depositAmount > 0) {
+        setMessage(
+          `تم إنشاء طلب الحجز ✅ رقم الحجز: ${bookingCode} — العربون المطلوب ${depositAmount.toLocaleString(
+            "ar-EG"
+          )} ج.م. سيتم الانتقال للدفع بالمحفظة بعد ربط بوابة الدفع.`
+        );
+      } else {
+        setMessage(
+          `تم إرسال طلب الحجز بنجاح ✅ رقم الحجز: ${bookingCode}`
+        );
+      }
 
       setName("");
       setPhone("");
@@ -171,7 +206,9 @@ export default function BookingPage() {
         dir="rtl"
         className="flex min-h-screen items-center justify-center bg-[#fbfaf7]"
       >
-        <p className="font-bold">جاري تحميل الخدمة...</p>
+        <p className="font-bold">
+          جاري تحميل الخدمة...
+        </p>
       </main>
     );
   }
@@ -198,12 +235,30 @@ export default function BookingPage() {
     );
   }
 
+  const depositAmount = service.deposit_required
+    ? Number(service.deposit_amount || 0)
+    : 0;
+
+  const remainingAmount = Math.max(
+    Number(service.price || 0) - depositAmount,
+    0
+  );
+
   return (
-    <main dir="rtl" className="min-h-screen bg-[#fbfaf7]">
+    <main
+      dir="rtl"
+      className="min-h-screen bg-[#fbfaf7]"
+    >
       <header className="border-b bg-white px-4 py-5">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
-          <Link href="/" className="text-2xl font-black">
-            Tyson <span className="text-[#b87333]">Media</span>
+          <Link
+            href="/"
+            className="text-2xl font-black"
+          >
+            Tyson{" "}
+            <span className="text-[#b87333]">
+              Media
+            </span>
           </Link>
 
           <Link
@@ -226,15 +281,73 @@ export default function BookingPage() {
           </h1>
 
           <p className="mt-3 text-white/70">
-            {service.provider?.business_name || "مقدم خدمة"}
+            {service.provider?.business_name ||
+              "مقدم خدمة"}
+
             {service.provider?.city
               ? ` — ${service.provider.city}`
               : ""}
           </p>
 
-          <p className="mt-4 text-2xl font-black text-[#d99b63]">
-            {service.price} ج.م
-          </p>
+          <div className="mt-5 rounded-2xl bg-white/10 p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-white/70">
+                سعر الخدمة
+              </span>
+
+              <span className="text-2xl font-black">
+                {Number(service.price).toLocaleString(
+                  "ar-EG"
+                )}{" "}
+                ج.م
+              </span>
+            </div>
+
+            {depositAmount > 0 && (
+              <>
+                <div className="my-4 border-t border-white/10" />
+
+                <div className="flex items-center justify-between">
+                  <span className="text-white/70">
+                    العربون المطلوب
+                  </span>
+
+                  <span className="text-xl font-black text-[#d99b63]">
+                    {depositAmount.toLocaleString(
+                      "ar-EG"
+                    )}{" "}
+                    ج.م
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between text-sm">
+                  <span className="text-white/60">
+                    المتبقي بعد دفع العربون
+                  </span>
+
+                  <span className="font-bold">
+                    {remainingAmount.toLocaleString(
+                      "ar-EG"
+                    )}{" "}
+                    ج.م
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {depositAmount > 0 && (
+            <div className="mt-4 rounded-2xl border border-[#b87333]/40 bg-[#b87333]/10 p-4">
+              <p className="font-black">
+                💳 يوجد عربون لهذه الخدمة
+              </p>
+
+              <p className="mt-2 text-sm leading-6 text-white/70">
+                سيتم دفع العربون عن طريق المحفظة
+                الإلكترونية قبل تأكيد الحجز النهائي.
+              </p>
+            </div>
+          )}
         </div>
 
         <form
@@ -251,7 +364,9 @@ export default function BookingPage() {
 
           <input
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) =>
+              setName(e.target.value)
+            }
             className="mt-2 w-full rounded-xl border p-3 outline-none focus:border-[#b87333]"
             placeholder="اكتب اسمك"
           />
@@ -263,7 +378,9 @@ export default function BookingPage() {
           <input
             type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) =>
+              setPhone(e.target.value)
+            }
             className="mt-2 w-full rounded-xl border p-3 outline-none focus:border-[#b87333]"
             placeholder="01xxxxxxxxx"
           />
@@ -275,7 +392,9 @@ export default function BookingPage() {
           <input
             type="date"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) =>
+              setDate(e.target.value)
+            }
             className="mt-2 w-full rounded-xl border p-3 outline-none focus:border-[#b87333]"
           />
 
@@ -286,7 +405,9 @@ export default function BookingPage() {
           <input
             type="time"
             value={time}
-            onChange={(e) => setTime(e.target.value)}
+            onChange={(e) =>
+              setTime(e.target.value)
+            }
             className="mt-2 w-full rounded-xl border p-3 outline-none focus:border-[#b87333]"
           />
 
@@ -296,7 +417,9 @@ export default function BookingPage() {
 
           <input
             value={location}
-            onChange={(e) => setLocation(e.target.value)}
+            onChange={(e) =>
+              setLocation(e.target.value)
+            }
             className="mt-2 w-full rounded-xl border p-3 outline-none focus:border-[#b87333]"
             placeholder="مثال: الإسكندرية"
           />
@@ -307,16 +430,32 @@ export default function BookingPage() {
 
           <select
             value={eventType}
-            onChange={(e) => setEventType(e.target.value)}
+            onChange={(e) =>
+              setEventType(e.target.value)
+            }
             className="mt-2 w-full rounded-xl border bg-white p-3 outline-none focus:border-[#b87333]"
           >
-            <option value="">اختر نوع المناسبة</option>
-            <option value="wedding">فرح</option>
-            <option value="engagement">خطوبة</option>
-            <option value="birthday">عيد ميلاد</option>
-            <option value="party">حفلة</option>
-            <option value="portrait">جلسة تصوير</option>
-            <option value="other">أخرى</option>
+            <option value="">
+              اختر نوع المناسبة
+            </option>
+            <option value="wedding">
+              فرح
+            </option>
+            <option value="engagement">
+              خطوبة
+            </option>
+            <option value="birthday">
+              عيد ميلاد
+            </option>
+            <option value="party">
+              حفلة
+            </option>
+            <option value="portrait">
+              جلسة تصوير
+            </option>
+            <option value="other">
+              أخرى
+            </option>
           </select>
 
           <label className="mt-4 block text-sm font-bold">
@@ -325,13 +464,15 @@ export default function BookingPage() {
 
           <textarea
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            onChange={(e) =>
+              setNotes(e.target.value)
+            }
             className="mt-2 min-h-28 w-full rounded-xl border p-3 outline-none focus:border-[#b87333]"
             placeholder="أي تفاصيل إضافية..."
           />
 
           {message && (
-            <div className="mt-5 rounded-xl bg-[#fbfaf7] p-4 text-center text-sm font-bold">
+            <div className="mt-5 rounded-xl bg-[#fbfaf7] p-4 text-center text-sm font-bold leading-6">
               {message}
             </div>
           )}
@@ -341,7 +482,13 @@ export default function BookingPage() {
             disabled={sending}
             className="mt-6 w-full rounded-xl bg-[#211f1c] px-4 py-4 font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {sending ? "جاري إرسال الحجز..." : "تأكيد طلب الحجز"}
+            {sending
+              ? "جاري إرسال الحجز..."
+              : depositAmount > 0
+              ? `متابعة دفع العربون — ${depositAmount.toLocaleString(
+                  "ar-EG"
+                )} ج.م`
+              : "تأكيد طلب الحجز"}
           </button>
         </form>
       </section>
