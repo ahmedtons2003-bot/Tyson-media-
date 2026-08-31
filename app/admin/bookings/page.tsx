@@ -15,10 +15,6 @@ type Booking = {
   event_type: string | null;
   notes: string | null;
   status: string | null;
-  deposit_amount: number | null;
-  deposit_status: string | null;
-  payment_wallet_number: string | null;
-  payment_reference: string | null;
 
   service?: {
     title: string;
@@ -27,23 +23,23 @@ type Booking = {
 
   provider?: {
     business_name: string;
-    city: string | null;
+    phone: string | null;
   } | null;
 };
+
+const statusOptions = [
+  { value: "pending", label: "قيد المراجعة" },
+  { value: "confirmed", label: "مؤكد" },
+  { value: "completed", label: "مكتمل" },
+  { value: "cancelled", label: "ملغي" },
+];
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
-
-  const [filter, setFilter] = useState<
-    "all" | "pending" | "confirmed" | "cancelled" | "completed"
-  >("all");
-
-  useEffect(() => {
-    loadBookings();
-  }, []);
+  const [message, setMessage] = useState("");
+  const [filter, setFilter] = useState("all");
 
   async function loadBookings() {
     setLoading(true);
@@ -60,15 +56,6 @@ export default function AdminBookingsPage() {
 
     const supabase = createClient(url, key);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      window.location.href = "/login";
-      return;
-    }
-
     const { data, error } = await supabase
       .from("bookings")
       .select(`
@@ -82,21 +69,20 @@ export default function AdminBookingsPage() {
         event_type,
         notes,
         status,
-        deposit_amount,
-        deposit_status,
-        payment_wallet_number,
-        payment_reference,
         service:services (
           title,
           price
         ),
         provider:providers (
           business_name,
-          city
+          phone
         )
       `)
-      .order("created_at", {
-        ascending: false,
+      .order("booking_date", {
+        ascending: true,
+      })
+      .order("booking_time", {
+        ascending: true,
       });
 
     if (error) {
@@ -114,9 +100,13 @@ export default function AdminBookingsPage() {
     setLoading(false);
   }
 
-  async function updateBookingStatus(
+  useEffect(() => {
+    loadBookings();
+  }, []);
+
+  async function updateStatus(
     bookingId: string,
-    status: string
+    newStatus: string
   ) {
     setUpdating(bookingId);
     setMessage("");
@@ -135,13 +125,13 @@ export default function AdminBookingsPage() {
     const { error } = await supabase
       .from("bookings")
       .update({
-        status,
+        status: newStatus,
       })
       .eq("id", bookingId);
 
     if (error) {
       setMessage(
-        "فشل تحديث حالة الحجز: " +
+        "تعذر تحديث حالة الحجز: " +
           error.message
       );
     } else {
@@ -150,141 +140,54 @@ export default function AdminBookingsPage() {
           booking.id === bookingId
             ? {
                 ...booking,
-                status,
+                status: newStatus,
               }
             : booking
         )
       );
+
+      setMessage("تم تحديث حالة الحجز بنجاح ✅");
     }
 
     setUpdating(null);
   }
 
-  async function updatePaymentStatus(
-    bookingId: string,
-    paymentStatus: string
-  ) {
-    setUpdating(bookingId);
-    setMessage("");
-
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!url || !key) {
-      setMessage("إعدادات Supabase غير موجودة.");
-      setUpdating(null);
-      return;
-    }
-
-    const supabase = createClient(url, key);
-
-    const { error } = await supabase
-      .from("bookings")
-      .update({
-        deposit_status: paymentStatus,
-      })
-      .eq("id", bookingId);
-
-    if (error) {
-      setMessage(
-        "فشل تحديث حالة الدفع: " +
-          error.message
-      );
-    } else {
-      setBookings((current) =>
-        current.map((booking) =>
-          booking.id === bookingId
-            ? {
-                ...booking,
-                deposit_status: paymentStatus,
-              }
-            : booking
-        )
-      );
-    }
-
-    setUpdating(null);
-  }
-
-  function statusText(
-    status: string | null
-  ) {
+  function statusText(status: string | null) {
     switch (status) {
       case "confirmed":
         return "مؤكد";
 
+      case "completed":
+        return "مكتمل";
+
       case "cancelled":
         return "ملغي";
 
-      case "completed":
-        return "مكتمل";
+      case "pending":
+        return "قيد المراجعة";
 
       default:
         return "قيد المراجعة";
     }
   }
 
-  function statusClass(
-    status: string | null
-  ) {
+  function statusClass(status: string | null) {
     switch (status) {
       case "confirmed":
         return "bg-green-100 text-green-700";
 
-      case "cancelled":
-        return "bg-red-100 text-red-700";
-
       case "completed":
         return "bg-blue-100 text-blue-700";
+
+      case "cancelled":
+        return "bg-red-100 text-red-700";
 
       default:
         return "bg-yellow-100 text-yellow-700";
     }
   }
 
-  function paymentStatusText(
-    status: string | null
-  ) {
-    switch (status) {
-      case "paid":
-        return "تم الدفع";
-
-      case "approved":
-        return "الدفع مؤكد";
-
-      case "rejected":
-        return "الدفع مرفوض";
-
-      case "pending":
-        return "الدفع قيد المراجعة";
-
-      default:
-        return "لا يوجد عربون";
-    }
-  }
-
-  function paymentStatusClass(
-    status: string | null
-  ) {
-    switch (status) {
-      case "paid":
-      case "approved":
-        return "bg-green-100 text-green-700";
-
-      case "rejected":
-        return "bg-red-100 text-red-700";
-
-      case "pending":
-        return "bg-orange-100 text-orange-700";
-
-      default:
-        return "bg-gray-100 text-gray-600";
-    }
-  }
-
-  function eventTypeText(
-    eventType: string | null
-  ) {
+  function eventTypeText(eventType: string | null) {
     switch (eventType) {
       case "wedding":
         return "فرح";
@@ -316,6 +219,8 @@ export default function AdminBookingsPage() {
   }
 
   function formatDate(date: string) {
+    if (!date) return "غير محدد";
+
     return new Date(
       `${date}T00:00:00`
     ).toLocaleDateString("ar-EG", {
@@ -328,16 +233,11 @@ export default function AdminBookingsPage() {
   const filteredBookings =
     filter === "all"
       ? bookings
-      : bookings.filter((booking) => {
-          if (filter === "pending") {
-            return (
-              !booking.status ||
-              booking.status === "pending"
-            );
-          }
-
-          return booking.status === filter;
-        });
+      : bookings.filter(
+          (booking) =>
+            (booking.status || "pending") ===
+            filter
+        );
 
   const pendingCount = bookings.filter(
     (booking) =>
@@ -350,9 +250,9 @@ export default function AdminBookingsPage() {
       booking.status === "confirmed"
   ).length;
 
-  const cancelledCount = bookings.filter(
+  const completedCount = bookings.filter(
     (booking) =>
-      booking.status === "cancelled"
+      booking.status === "completed"
   ).length;
 
   return (
@@ -361,7 +261,7 @@ export default function AdminBookingsPage() {
       className="min-h-screen bg-[#fbfaf7]"
     >
       <header className="border-b bg-white px-4 py-5">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <Link
             href="/"
             className="text-2xl font-black"
@@ -372,7 +272,7 @@ export default function AdminBookingsPage() {
             </span>
           </Link>
 
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Link
               href="/dashboard"
               className="rounded-xl border px-4 py-2 text-sm font-bold"
@@ -390,10 +290,10 @@ export default function AdminBookingsPage() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl px-4 py-8">
+      <section className="mx-auto max-w-7xl px-4 py-8">
         <div className="rounded-3xl bg-[#211f1c] p-7 text-white">
           <p className="text-sm text-white/60">
-            🛠️ الإدارة
+            🛠️ لوحة الإدارة
           </p>
 
           <h1 className="mt-2 text-3xl font-black">
@@ -401,21 +301,20 @@ export default function AdminBookingsPage() {
           </h1>
 
           <p className="mt-2 text-white/60">
-            متابعة الحجوزات والمدفوعات وطلبات
-            العملاء.
+            تابع جميع طلبات الحجز وقم بتحديث حالتها.
           </p>
         </div>
 
         {message && (
-          <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-center font-bold text-red-700">
+          <div className="mt-5 rounded-2xl border bg-white p-4 text-center font-bold">
             {message}
           </div>
         )}
 
         <div className="mt-6 grid gap-4 sm:grid-cols-4">
           <div className="rounded-2xl border bg-white p-5">
-            <p className="text-sm text-[#746f68]">
-              إجمالي الحجوزات
+            <p className="text-sm text-gray-500">
+              كل الحجوزات
             </p>
 
             <p className="mt-2 text-3xl font-black">
@@ -423,4 +322,10 @@ export default function AdminBookingsPage() {
             </p>
           </div>
 
-          <div class
+          <div className="rounded-2xl border bg-white p-5">
+            <p className="text-sm text-gray-500">
+              قيد المراجعة
+            </p>
+
+            <p className="mt-2 text-3xl font-black text-yellow-600">
+              {loading ? "..." : pendingCount}
