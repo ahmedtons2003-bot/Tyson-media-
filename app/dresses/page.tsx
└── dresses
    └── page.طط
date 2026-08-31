@@ -1,0 +1,476 @@
+"use client";
+
+import Link from "next/link";
+import { useMemo, useState } from "react";
+
+type Dress = {
+  id: number;
+  name: string;
+  type: string;
+  price: number;
+  size: string;
+  city: string;
+  color: string;
+  icon: string;
+};
+
+const dresses: Dress[] = [
+  {
+    id: 1,
+    name: "فستان زفاف كلاسيك",
+    type: "فساتين أفراح",
+    price: 8500,
+    size: "من 38 إلى 44",
+    city: "القاهرة",
+    color: "أبيض",
+    icon: "👰",
+  },
+  {
+    id: 2,
+    name: "فستان زفاف ملكي",
+    type: "فساتين أفراح",
+    price: 12000,
+    size: "من 40 إلى 46",
+    city: "الإسكندرية",
+    color: "أبيض",
+    icon: "👗",
+  },
+  {
+    id: 3,
+    name: "فستان خطوبة أنيق",
+    type: "فساتين خطوبة",
+    price: 5500,
+    size: "من 36 إلى 42",
+    city: "الجيزة",
+    color: "روز",
+    icon: "💗",
+  },
+  {
+    id: 4,
+    name: "فستان سواريه فاخر",
+    type: "سواريه",
+    price: 4500,
+    size: "من 36 إلى 44",
+    city: "القاهرة",
+    color: "أسود",
+    icon: "✨",
+  },
+  {
+    id: 5,
+    name: "فستان خطوبة بسيط",
+    type: "فساتين خطوبة",
+    price: 3800,
+    size: "من 36 إلى 42",
+    city: "البحيرة",
+    color: "بيج",
+    icon: "👗",
+  },
+  {
+    id: 6,
+    name: "فستان زفاف فخم",
+    type: "فساتين أفراح",
+    price: 15000,
+    size: "من 40 إلى 48",
+    city: "الإسكندرية",
+    color: "أبيض",
+    icon: "👰",
+  },
+];
+
+const categories = [
+  "الكل",
+  "فساتين أفراح",
+  "فساتين خطوبة",
+  "سواريه",
+];
+
+const cities = [
+  "كل المحافظات",
+  "القاهرة",
+  "الإسكندرية",
+  "الجيزة",
+  "البحيرة",
+];
+
+export default function DressesPage() {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("الكل");
+  const [city, setCity] = useState("كل المحافظات");
+  const [sort, setSort] = useState("newest");
+
+  const filteredDresses = useMemo(() => {
+    let result = [...dresses];
+
+    if (search.trim()) {
+      const value = search.trim().toLowerCase();
+
+      result = result.filter(
+        (dress) =>
+          dress.name.toLowerCase().includes(value) ||
+          dress.type.toLowerCase().includes(value) ||
+          dress.color.toLowerCase().includes(value)
+      );
+    }
+
+    if (category !== "الكل") {
+      result = result.filter(
+        (dress) => dress.type === category
+      );
+    }
+
+    if (city !== "كل المحافظات") {
+      result = result.filter(
+        (dress) => dress.city === city
+      );
+    }
+
+    if (sort === "price_low") {
+      result.sort((a, b) => a.price - b.price);
+    }
+
+    if (sort === "price_high") {
+      result.sort((a, b) => b.price - a.price);
+    }
+
+    return result;
+  }, [search, category, city, sort]);
+
+  function resetFilters() {
+    setSearch("");
+    setCategory("الكل");
+    setCity("كل المحافظات");
+    setSort("newest");
+  }
+
+  return (
+    <main
+      dir="rtl"
+      className="min-h-screen bg-[#f7f7f7] text-[#211f1c]"
+    >
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="flex h-16 items-center justify-between gap-4">
+            <Link
+              href="/"
+              className="shrink-0 text-2xl font-black"
+            >
+              Tyson{" "}
+              <span className="text-[#b87333]">
+                Media
+              </span>
+            </Link>
+
+            <div className="hidden flex-1 md:block md:max-w-xl">
+              <div className="relative">
+                <input
+                  value={search}
+                  onChange={(e) =>
+                    setSearch(e.target.value)
+                  }
+                  placeholder="ابحث عن فستان..."
+                  className="w-full rounded-2xl border bg-[#f6f5f3] px-5 py-3 pr-12 text-sm font-bold outline-none focus:border-[#b87333]"
+                />
+
+                <span className="absolute right-4 top-1/2 -translate-y-1/2">
+                  🔎
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Link
+                href="/cart"
+                className="rounded-xl border px-3 py-2 font-black"
+              >
+                🛒
+              </Link>
+
+              <Link
+                href="/login"
+                className="rounded-xl bg-[#211f1c] px-4 py-2.5 text-sm font-black text-white"
+              >
+                دخول
+              </Link>
+            </div>
+          </div>
+
+          <div className="pb-3 md:hidden">
+            <input
+              value={search}
+              onChange={(e) =>
+                setSearch(e.target.value)
+              }
+              placeholder="ابحث عن فستان..."
+              className="w-full rounded-xl border bg-[#f6f5f3] p-3 text-sm font-bold outline-none focus:border-[#b87333]"
+            />
+          </div>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="mx-auto max-w-7xl px-4 py-5 md:py-8">
+        <div className="relative overflow-hidden rounded-[2rem] bg-[#211f1c] px-6 py-12 text-white md:px-12 md:py-16">
+          <div className="relative z-10 max-w-3xl">
+            <span className="inline-flex rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-black text-[#e2b783]">
+              TYSON MEDIA • DRESSES
+            </span>
+
+            <h1 className="mt-5 text-4xl font-black leading-tight md:text-6xl">
+              فستان مناسبتك
+              <br />
+              <span className="text-[#d6a66f]">
+                يبدأ من هنا 👗
+              </span>
+            </h1>
+
+            <p className="mt-5 max-w-2xl text-sm leading-7 text-white/65 md:text-lg">
+              اكتشفي فساتين الأفراح والخطوبة
+              والسواريه واختاري التصميم المناسب
+              لمناسبتك.
+            </p>
+
+            <Link
+              href="#dresses"
+              className="mt-8 inline-block rounded-xl bg-[#b87333] px-7 py-4 font-black text-white"
+            >
+              اكتشفي الفساتين
+            </Link>
+          </div>
+
+          <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-[#b87333]/15 blur-3xl" />
+
+          <div className="absolute -bottom-32 right-1/3 h-72 w-72 rounded-full bg-white/5 blur-3xl" />
+        </div>
+      </section>
+
+      {/* Categories */}
+      <section className="mx-auto max-w-7xl px-4">
+        <div className="rounded-2xl border bg-white p-4">
+          <h2 className="mb-4 text-xl font-black">
+            اختاري نوع الفستان
+          </h2>
+
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {categories.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setCategory(item)}
+                className={`min-w-fit rounded-full px-5 py-3 text-sm font-black transition ${
+                  category === item
+                    ? "bg-[#211f1c] text-white"
+                    : "bg-[#f0ece7] hover:bg-[#e6ddd4]"
+                }`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Filters */}
+      <section className="mx-auto max-w-7xl px-4 py-5">
+        <div className="rounded-2xl border bg-white p-4">
+          <div className="grid gap-3 md:grid-cols-2">
+            <select
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className="rounded-xl border bg-white p-3 font-bold outline-none focus:border-[#b87333]"
+            >
+              {cities.map((item) => (
+                <option key={item} value={item}>
+                  📍 {item}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="rounded-xl border bg-white p-3 font-bold outline-none focus:border-[#b87333]"
+            >
+              <option value="newest">الأحدث</option>
+              <option value="price_low">
+                السعر: من الأقل للأعلى
+              </option>
+              <option value="price_high">
+                السعر: من الأعلى للأقل
+              </option>
+            </select>
+          </div>
+
+          {(search ||
+            category !== "الكل" ||
+            city !== "كل المحافظات") && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="mt-4 rounded-xl bg-[#211f1c] px-5 py-3 text-sm font-black text-white"
+            >
+              مسح الفلاتر
+            </button>
+          )}
+        </div>
+      </section>
+
+      {/* Dresses */}
+      <section
+        id="dresses"
+        className="mx-auto max-w-7xl px-4 pb-16"
+      >
+        <div className="mb-6 flex items-end justify-between">
+          <div>
+            <p className="text-sm font-black text-[#b87333]">
+              DRESSES MARKET
+            </p>
+
+            <h2 className="mt-1 text-3xl font-black">
+              الفساتين المتاحة
+            </h2>
+          </div>
+
+          <span className="text-sm text-gray-500">
+            {filteredDresses.length} فستان
+          </span>
+        </div>
+
+        {filteredDresses.length === 0 ? (
+          <div className="rounded-3xl border bg-white p-12 text-center">
+            <div className="text-6xl">👗</div>
+
+            <h3 className="mt-4 text-xl font-black">
+              مفيش فساتين مطابقة
+            </h3>
+
+            <p className="mt-2 text-sm text-gray-500">
+              جرّبي تغيير البحث أو الفلاتر.
+            </p>
+
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="mt-5 rounded-xl bg-[#211f1c] px-6 py-3 font-black text-white"
+            >
+              مسح الفلاتر
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            {filteredDresses.map((dress) => (
+              <article
+                key={dress.id}
+                className="overflow-hidden rounded-3xl border bg-white transition hover:-translate-y-1 hover:shadow-xl"
+              >
+                <div className="relative flex h-56 items-center justify-center bg-[#eee6dc] text-8xl">
+                  {dress.icon}
+
+                  <span className="absolute right-2 top-2 rounded-full bg-white/95 px-3 py-1 text-xs font-black">
+                    متاح
+                  </span>
+                </div>
+
+                <div className="p-4">
+                  <p className="text-xs font-bold text-[#b87333]">
+                    {dress.type}
+                  </p>
+
+                  <h3 className="mt-2 line-clamp-2 text-lg font-black">
+                    {dress.name}
+                  </h3>
+
+                  <div className="mt-3 space-y-1 text-xs text-gray-500">
+                    <p>📍 {dress.city}</p>
+                    <p>📏 {dress.size}</p>
+                    <p>🎨 {dress.color}</p>
+                  </div>
+
+                  <p className="mt-4 text-xl font-black text-[#b87333]">
+                    {dress.price.toLocaleString("ar-EG")} ج.م
+                  </p>
+
+                  <Link
+                    href={`/register?type=dress&item=${dress.id}`}
+                    className="mt-4 block rounded-xl bg-[#211f1c] px-4 py-3 text-center text-sm font-black text-white transition hover:bg-[#b87333]"
+                  >
+                    عرض التفاصيل
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* CTA */}
+      <section className="mx-auto max-w-7xl px-4 pb-16">
+        <div className="rounded-[2rem] bg-[#eee6dc] p-8 text-center md:p-12">
+          <div className="text-6xl">👗</div>
+
+          <h2 className="mt-4 text-3xl font-black">
+            عندك فساتين؟
+          </h2>
+
+          <p className="mx-auto mt-3 max-w-xl leading-7 text-gray-600">
+            اعرض فساتينك على Tyson Media
+            ووصل لعملاء جدد من مختلف محافظات مصر.
+          </p>
+
+          <Link
+            href="/register"
+            className="mt-6 inline-block rounded-xl bg-[#211f1c] px-7 py-4 font-black text-white"
+          >
+            ابدأ البيع
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-xl font-black">
+                Tyson{" "}
+                <span className="text-[#b87333]">
+                  Media
+                </span>
+              </div>
+
+              <p className="mt-2 text-sm text-gray-500">
+                فساتين أفراح ومناسبات في مكان واحد.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-4 text-sm font-bold text-gray-600">
+              <Link href="/">
+                الرئيسية
+              </Link>
+
+              <Link href="/photography">
+                التصوير
+              </Link>
+
+              <Link href="/handmade">
+                Handmade
+              </Link>
+
+              <Link href="/cars">
+                السيارات
+              </Link>
+
+              <Link href="/cart">
+                السلة
+              </Link>
+            </div>
+          </div>
+
+          <div className="mt-6 border-t pt-5 text-center text-xs text-gray-400">
+            © {new Date().getFullYear()} Tyson Media
+          </div>
+        </div>
+      </footer>
+    </main>
+  );
+}
