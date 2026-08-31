@@ -107,19 +107,38 @@ export default function HomePage() {
   }, []);
 
   function categoryLink(category: Category) {
-    const slug = category.slug?.toLowerCase() || "";
+    const slug = category.slug?.toLowerCase().trim() || "";
+    const name = category.name?.toLowerCase().trim() || "";
+
+    if (
+      slug === "drone" ||
+      name.includes("درون")
+    ) {
+      return "/photography?category=drone";
+    }
+
+    if (
+      slug === "photography-quality" ||
+      name.includes("جودة")
+    ) {
+      return "/photography?category=video";
+    }
 
     if (
       slug.includes("photo") ||
-      slug.includes("تصوير")
+      slug.includes("photography") ||
+      slug.includes("تصوير") ||
+      name.includes("تصوير")
     ) {
       return "/photography";
     }
 
     if (
       slug.includes("hand") ||
+      slug.includes("handmade") ||
       slug.includes("هاند") ||
-      slug.includes("صناعات")
+      slug.includes("صناعات") ||
+      name.includes("هاند")
     ) {
       return "/handmade";
     }
@@ -364,10 +383,7 @@ export default function HomePage() {
                       <p>
                         🏪{" "}
                         <span className="font-bold text-[#211f1c]">
-                          {
-                            service.provider
-                              .business_name
-                          }
+                          {service.provider.business_name}
                         </span>
                       </p>
                     )}
@@ -421,9 +437,7 @@ export default function HomePage() {
             href="/handmade"
             className="group rounded-3xl bg-[#e9ddd0] p-7 transition hover:-translate-y-1"
           >
-            <div className="text-5xl">
-              🎁
-            </div>
+            <div className="text-5xl">🎁</div>
 
             <h2 className="mt-5 text-2xl font-black">
               هاند ميد وهدايا
@@ -443,9 +457,7 @@ export default function HomePage() {
             href="/photography"
             className="group rounded-3xl bg-[#211f1c] p-7 text-white transition hover:-translate-y-1"
           >
-            <div className="text-5xl">
-              📸
-            </div>
+            <div className="text-5xl">📸</div>
 
             <h2 className="mt-5 text-2xl font-black">
               التصوير والمناسبات
@@ -466,9 +478,7 @@ export default function HomePage() {
       {/* Provider CTA */}
       <section className="mx-auto max-w-7xl px-4 py-10">
         <div className="rounded-3xl border bg-white p-7 text-center md:p-10">
-          <div className="text-5xl">
-            🏪
-          </div>
+          <div className="text-5xl">🏪</div>
 
           <h2 className="mt-4 text-3xl font-black">
             عندك خدمة أو مشروع؟
@@ -515,9 +525,7 @@ export default function HomePage() {
             </div>
 
             <div className="flex flex-wrap gap-4 text-sm font-bold text-white/70">
-              <Link href="/">
-                الرئيسية
-              </Link>
+              <Link href="/">الرئيسية</Link>
 
               <Link href="/photography">
                 التصوير
