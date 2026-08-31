@@ -23,12 +23,6 @@ type Booking = {
   payment_reference: string | null;
   payment_note: string | null;
 
-  customer_id: string;
-  provider_id: string;
-  service_id: string;
-
-  created_at: string;
-
   service?: {
     title: string;
     price: number | null;
@@ -51,21 +45,12 @@ export default function AdminBookingsPage() {
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  useEffect(() => {
-    loadBookings();
-  }, []);
-
   async function getSupabase() {
-    const url =
-      process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-    const key =
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!url || !key) {
-      throw new Error(
-        "إعدادات Supabase غير موجودة."
-      );
+      throw new Error("إعدادات Supabase غير موجودة.");
     }
 
     return createClient(url, key);
@@ -117,10 +102,6 @@ export default function AdminBookingsPage() {
           payment_wallet_number,
           payment_reference,
           payment_note,
-          customer_id,
-          provider_id,
-          service_id,
-          created_at,
           service:services (
             title,
             price
@@ -130,8 +111,8 @@ export default function AdminBookingsPage() {
             city
           )
         `)
-        .order("created_at", {
-          ascending: false,
+        .order("booking_date", {
+          ascending: true,
         });
 
       if (error) {
@@ -152,6 +133,10 @@ export default function AdminBookingsPage() {
     }
   }
 
+  useEffect(() => {
+    loadBookings();
+  }, []);
+
   async function updateBookingStatus(
     bookingId: string,
     status: string
@@ -165,9 +150,7 @@ export default function AdminBookingsPage() {
 
       const { error } = await supabase
         .from("bookings")
-        .update({
-          status,
-        })
+        .update({ status })
         .eq("id", bookingId);
 
       if (error) {
@@ -189,7 +172,7 @@ export default function AdminBookingsPage() {
         status === "confirmed"
           ? "تم تأكيد الحجز بنجاح ✅"
           : status === "cancelled"
-          ? "تم إلغاء الحجز."
+          ? "تم رفض الحجز."
           : "تم تحديث حالة الحجز."
       );
     } catch (error) {
@@ -230,8 +213,7 @@ export default function AdminBookingsPage() {
           booking.id === bookingId
             ? {
                 ...booking,
-                deposit_status:
-                  depositStatus,
+                deposit_status: depositStatus,
               }
             : booking
         )
@@ -257,16 +239,12 @@ export default function AdminBookingsPage() {
     switch (status) {
       case "confirmed":
         return "مؤكد";
-
       case "cancelled":
         return "ملغي";
-
       case "completed":
         return "مكتمل";
-
       case "pending":
         return "قيد المراجعة";
-
       default:
         return "قيد المراجعة";
     }
@@ -276,88 +254,63 @@ export default function AdminBookingsPage() {
     switch (status) {
       case "confirmed":
         return "bg-green-100 text-green-700";
-
       case "cancelled":
         return "bg-red-100 text-red-700";
-
       case "completed":
         return "bg-blue-100 text-blue-700";
-
       default:
         return "bg-yellow-100 text-yellow-700";
     }
   }
 
-  function depositText(
-    status: string | null
-  ) {
+  function depositText(status: string | null) {
     switch (status) {
       case "paid":
         return "تم الدفع";
-
       case "rejected":
         return "مرفوض";
-
       case "pending":
         return "في انتظار المراجعة";
-
       case "cancelled":
         return "غير مطلوب";
-
       default:
         return "غير محدد";
     }
   }
 
-  function depositClass(
-    status: string | null
-  ) {
+  function depositClass(status: string | null) {
     switch (status) {
       case "paid":
         return "bg-green-100 text-green-700";
-
       case "rejected":
         return "bg-red-100 text-red-700";
-
       case "pending":
         return "bg-orange-100 text-orange-700";
-
       default:
         return "bg-gray-100 text-gray-600";
     }
   }
 
-  function eventTypeText(
-    eventType: string | null
-  ) {
+  function eventTypeText(eventType: string | null) {
     switch (eventType) {
       case "wedding":
         return "فرح";
-
       case "engagement":
         return "خطوبة";
-
       case "birthday":
         return "عيد ميلاد";
-
       case "party":
         return "حفلة";
-
       case "portrait":
         return "جلسة تصوير";
-
       case "car":
         return "سيارة";
-
       case "dress":
         return "فستان";
-
       case "suit":
         return "بدلة";
-
       case "other":
         return "أخرى";
-
       default:
         return eventType || "غير محدد";
     }
@@ -373,24 +326,21 @@ export default function AdminBookingsPage() {
     });
   }
 
-  const pendingBookings =
-    bookings.filter(
-      (booking) =>
-        !booking.status ||
-        booking.status === "pending"
-    ).length;
+  const pendingBookings = bookings.filter(
+    (booking) =>
+      !booking.status ||
+      booking.status === "pending"
+  ).length;
 
-  const confirmedBookings =
-    bookings.filter(
-      (booking) =>
-        booking.status === "confirmed"
-    ).length;
+  const confirmedBookings = bookings.filter(
+    (booking) =>
+      booking.status === "confirmed"
+  ).length;
 
-  const pendingDeposits =
-    bookings.filter(
-      (booking) =>
-        booking.deposit_status === "pending"
-    ).length;
+  const pendingDeposits = bookings.filter(
+    (booking) =>
+      booking.deposit_status === "pending"
+  ).length;
 
   if (loading) {
     return (
@@ -398,8 +348,10 @@ export default function AdminBookingsPage() {
         dir="rtl"
         className="flex min-h-screen items-center justify-center bg-[#fbfaf7]"
       >
-        <div className="rounded-2xl border bg-white p-8 text-center">
-          <p className="font-black">
+        <div className="rounded-3xl border bg-white p-8 text-center">
+          <div className="text-4xl">⏳</div>
+
+          <p className="mt-4 font-black">
             جاري تحميل لوحة الإدارة...
           </p>
         </div>
@@ -423,16 +375,27 @@ export default function AdminBookingsPage() {
             لوحة الإدارة
           </h1>
 
-          <p className="mt-3 font-bold text-red-600">
+          <p className="mt-4 leading-7 font-bold text-red-600">
             {errorMessage}
           </p>
 
-          <Link
-            href="/"
-            className="mt-6 block rounded-xl bg-[#211f1c] px-5 py-3 font-black text-white"
-          >
-            العودة للرئيسية
-          </Link>
+          <div className="mt-6 flex gap-3">
+
+            <button
+              onClick={loadBookings}
+              className="flex-1 rounded-xl border px-5 py-3 font-black"
+            >
+              إعادة المحاولة
+            </button>
+
+            <Link
+              href="/"
+              className="flex-1 rounded-xl bg-[#211f1c] px-5 py-3 font-black text-white"
+            >
+              الرئيسية
+            </Link>
+
+          </div>
 
         </div>
       </main>
@@ -482,11 +445,11 @@ export default function AdminBookingsPage() {
 
       <section className="mx-auto max-w-7xl px-4 py-8">
 
-        {/* Title */}
+        {/* Welcome */}
         <div className="rounded-3xl bg-[#211f1c] p-7 text-white">
 
           <p className="text-sm text-white/60">
-            👑 الإدارة
+            👑 لوحة الإدارة
           </p>
 
           <h1 className="mt-2 text-3xl font-black">
@@ -494,8 +457,7 @@ export default function AdminBookingsPage() {
           </h1>
 
           <p className="mt-2 text-white/60">
-            متابعة طلبات العملاء ومراجعة العربون
-            وتأكيد الحجوزات.
+            متابعة الحجوزات والعملاء ومراجعة العربون.
           </p>
 
         </div>
@@ -504,12 +466,6 @@ export default function AdminBookingsPage() {
         {message && (
           <div className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4 text-center font-bold text-green-700">
             {message}
-          </div>
-        )}
-
-        {errorMessage && (
-          <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-center font-bold text-red-700">
-            {errorMessage}
           </div>
         )}
 
@@ -567,21 +523,26 @@ export default function AdminBookingsPage() {
 
           {bookings.length === 0 ? (
             <div className="rounded-3xl border bg-white p-10 text-center">
-              <p className="text-lg font-black">
+
+              <div className="text-5xl">
+                📭
+              </div>
+
+              <p className="mt-4 text-lg font-black">
                 لا توجد حجوزات حتى الآن.
               </p>
+
             </div>
           ) : (
             <div className="space-y-5">
 
               {bookings.map((booking) => (
-
                 <div
                   key={booking.id}
                   className="rounded-3xl border bg-white p-6 shadow-sm"
                 >
 
-                  {/* Top */}
+                  {/* Booking Header */}
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 
                     <div>
@@ -602,26 +563,26 @@ export default function AdminBookingsPage() {
                           )}
                         </span>
 
-                        {booking.deposit_amount &&
-                          booking.deposit_amount >
-                            0 && (
-                            <span
-                              className={`rounded-full px-4 py-2 text-xs font-black ${depositClass(
-                                booking.deposit_status
-                              )}`}
-                            >
-                              العربون:{" "}
-                              {depositText(
-                                booking.deposit_status
-                              )}
-                            </span>
-                          )}
+                        {Number(
+                          booking.deposit_amount || 0
+                        ) > 0 && (
+                          <span
+                            className={`rounded-full px-4 py-2 text-xs font-black ${depositClass(
+                              booking.deposit_status
+                            )}`}
+                          >
+                            العربون:{" "}
+                            {depositText(
+                              booking.deposit_status
+                            )}
+                          </span>
+                        )}
 
                       </div>
 
                       <h3 className="mt-4 text-xl font-black">
                         {booking.service?.title ||
-                          "خدمة"}
+                          "الخدمة"}
                       </h3>
 
                       <p className="mt-2 text-sm text-[#746f68]">
@@ -636,6 +597,7 @@ export default function AdminBookingsPage() {
                     <div className="flex flex-wrap gap-2">
 
                       <button
+                        type="button"
                         disabled={
                           updating === booking.id
                         }
@@ -651,6 +613,7 @@ export default function AdminBookingsPage() {
                       </button>
 
                       <button
+                        type="button"
                         disabled={
                           updating === booking.id
                         }
@@ -669,7 +632,7 @@ export default function AdminBookingsPage() {
 
                   </div>
 
-                  {/* Customer */}
+                  {/* Customer Info */}
                   <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 
                     <div className="rounded-2xl bg-[#fbfaf7] p-4">
@@ -719,7 +682,7 @@ export default function AdminBookingsPage() {
 
                   </div>
 
-                  {/* Event */}
+                  {/* Event Info */}
                   <div className="mt-4 grid gap-4 md:grid-cols-2">
 
                     <div className="rounded-2xl bg-[#fbfaf7] p-4">
@@ -737,7 +700,7 @@ export default function AdminBookingsPage() {
 
                     <div className="rounded-2xl bg-[#fbfaf7] p-4">
                       <p className="text-xs text-[#746f68]">
-                        المكان
+                        مكان المناسبة
                       </p>
 
                       <p className="mt-1 font-black">
@@ -748,39 +711,42 @@ export default function AdminBookingsPage() {
                   </div>
 
                   {/* Payment */}
-                  {booking.deposit_amount &&
-                    booking.deposit_amount >
-                      0 && (
-                      <div className="mt-5 rounded-2xl border border-orange-200 bg-orange-50 p-5">
+                  {Number(
+                    booking.deposit_amount || 0
+                  ) > 0 && (
+                    <div className="mt-5 rounded-2xl border border-orange-200 bg-orange-50 p-5">
 
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
 
-                          <div>
+                        <div className="min-w-0">
 
-                            <h4 className="font-black text-orange-900">
-                              🟠 مراجعة العربون
-                            </h4>
+                          <h4 className="font-black text-orange-900">
+                            🟠 مراجعة العربون
+                          </h4>
 
-                            <p className="mt-2 text-sm text-orange-800">
-                              المبلغ:{" "}
-                              <strong>
-                                {Number(
-                                  booking.deposit_amount
-                                ).toLocaleString(
-                                  "ar-EG"
-                                )}{" "}
-                                ج.م
-                              </strong>
-                            </p>
+                          <p className="mt-3 text-sm text-orange-800">
+                            مبلغ العربون:{" "}
+                            <strong>
+                              {Number(
+                                booking.deposit_amount
+                              ).toLocaleString(
+                                "ar-EG"
+                              )}{" "}
+                              ج.م
+                            </strong>
+                          </p>
 
-                            <p className="mt-2 text-sm text-orange-800">
-                              المحفظة:{" "}
+                          <p className="mt-2 text-sm text-orange-800">
+                            رقم المحفظة:{" "}
+                            <strong>
                               {booking.payment_wallet_number ||
                                 "غير مسجل"}
-                            </p>
+                            </strong>
+                          </p>
 
-                            <p className="mt-2 text-sm text-orange-800">
-                              رقم العملية:{" "}
-                              <strong>
-                                {booking.payment_reference ||
-                     
+                          <p className="mt-2 text-sm text-orange-800">
+                            رقم العملية:{" "}
+                            <strong>
+                              {booking.payment_reference ||
+                                "غير مسجل"}
+   
