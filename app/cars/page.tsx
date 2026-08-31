@@ -1,15 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-const supabase =
-  supabaseUrl && supabaseKey
-    ? createClient(supabaseUrl, supabaseKey)
-    : null;
 
 type Brand = {
   id: string;
@@ -23,338 +16,244 @@ type CarType = {
   brand_id: string;
   name: string;
   slug: string;
-  image_url: string | null;
-};
-
-type EventCar = {
-  id: string;
-  title: string;
-  description: string | null;
-  image_url: string | null;
-  price: number | null;
-  city: string | null;
 };
 
 export default function CarsPage() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [types, setTypes] = useState<CarType[]>([]);
-  const [cars, setCars] = useState<EventCar[]>([]);
-
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
-  const [selectedType, setSelectedType] = useState<CarType | null>(null);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    loadBrands();
+    async function loadCars() {
+      try {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+        if (!url || !key) {
+          setError("إعدادات Supabase غير موجودة.");
+          return;
+        }
+
+        const supabase = createClient(url, key);
+
+        const { data: brandsData, error: brandsError } = await supabase
+          .from("car_brands")
+          .select("id, name, slug, image_url")
+          .order("name");
+
+        if (brandsError) {
+          setError(brandsError.message);
+          return;
+        }
+
+        const { data: typesData, error: typesError } = await supabase
+          .from("car_types")
+          .select("id, brand_id, name, slug")
+          .order("name");
+
+        if (typesError) {
+          setError(typesError.message);
+          return;
+        }
+
+        setBrands(brandsData || []);
+        setTypes(typesData || []);
+      } catch {
+        setError("حدث خطأ أثناء تحميل السيارات.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadCars();
   }, []);
 
-  async function loadBrands() {
-    if (!supabase) {
-      setError("إعدادات Supabase غير موجودة في الموقع.");
-      setLoading(false);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("car_brands")
-      .select("id,name,slug,image_url")
-      .eq("is_active", true)
-      .order("name");
-
-    if (error) {
-      setError(error.message);
-    } else {
-      setBrands(data || []);
-    }
-
-    setLoading(false);
-  }
-
-  async function selectBrand(brand: Brand) {
-    if (!supabase) return;
-
-    setSelectedBrand(brand);
-    setSelectedType(null);
-    setCars([]);
-    setError("");
-
-    const { data, error } = await supabase
-      .from("car_types")
-      .select("id,brand_id,name,slug,image_url")
-      .eq("brand_id", brand.id)
-      .eq("is_active", true)
-      .order("name");
-
-    if (error) {
-      setError(error.message);
-    } else {
-      setTypes(data || []);
-    }
-  }
-
-  async function selectType(type: CarType) {
-    if (!supabase || !selectedBrand) return;
-
-    setSelectedType(type);
-    setError("");
-
-    const { data, error } = await supabase
-      .from("event_cars")
-      .select(
-        "id,title,description,image_url,price,city"
-      )
-      .eq("brand_id", selectedBrand.id)
-      .eq("car_type_id", type.id)
-      .eq("is_active", true)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      setError(error.message);
-    } else {
-      setCars(data || []);
-    }
-  }
-
-  function resetSelection() {
-    setSelectedBrand(null);
-    setSelectedType(null);
-    setTypes([]);
-    setCars([]);
-    setError("");
-  }
-
-  if (loading) {
-    return (
-      <main dir="rtl" className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-lg">جاري تحميل السيارات...</p>
-      </main>
-    );
-  }
+  const brandTypes = selectedBrand
+    ? types.filter((type) => type.brand_id === selectedBrand.id)
+    : [];
 
   return (
-    <main dir="rtl" className="min-h-screen bg-gray-50">
-
+    <main dir="rtl" className="min-h-screen bg-[#fbfaf7] text-[#211f1c]">
       {/* Header */}
-      <section className="bg-black text-white px-5 py-10">
-        <div className="max-w-6xl mx-auto">
-          <button
-            onClick={resetSelection}
-            className="text-sm text-gray-300 mb-5"
-          >
-            ← سيارات المناسبات
-          </button>
+      <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+          <Link href="/" className="text-2xl font-black">
+            Tyson <span className="text-[#b87333]">Media</span>
+          </Link>
 
-          <h1 className="text-3xl md:text-5xl font-bold">
+          <Link
+            href="/"
+            className="rounded-xl bg-[#211f1c] px-4 py-2 text-sm font-bold text-white"
+          >
+            الرئيسية
+          </Link>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="mx-auto max-w-6xl px-4 py-12">
+        <div className="rounded-[2rem] bg-[#211f1c] px-6 py-12 text-center text-white">
+          <div className="text-6xl">🚘</div>
+
+          <h1 className="mt-5 text-4xl font-black md:text-5xl">
             سيارات المناسبات
           </h1>
 
-          <p className="mt-3 text-gray-300">
-            اختار العربية المناسبة لمناسبتك
+          <p className="mx-auto mt-4 max-w-2xl leading-8 text-white/70">
+            اختار العربية المناسبة لزفتك أو مناسبتك وكأنك داخل معرض سيارات.
           </p>
         </div>
       </section>
 
-      <div className="max-w-6xl mx-auto px-5 py-8">
+      {/* Content */}
+      <section className="mx-auto max-w-6xl px-4 pb-16">
+        {loading && (
+          <div className="rounded-2xl border bg-white p-8 text-center font-bold">
+            جاري تحميل السيارات...
+          </div>
+        )}
 
         {error && (
-          <div className="mb-6 rounded-xl bg-red-50 text-red-700 p-4">
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-center font-bold text-red-700">
             {error}
           </div>
         )}
 
-        {/* Brands */}
-        {!selectedBrand && (
+        {!loading && !error && (
           <>
-            <h2 className="text-2xl font-bold mb-6">
-              اختر ماركة العربية
-            </h2>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {brands.map((brand) => (
-                <button
-                  key={brand.id}
-                  onClick={() => selectBrand(brand)}
-                  className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition text-right"
-                >
-                  <div className="aspect-[4/3] bg-gray-200 flex items-center justify-center overflow-hidden">
-                    {brand.image_url ? (
-                      <img
-                        src={brand.image_url}
-                        alt={brand.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-2xl font-bold text-gray-500">
-                        {brand.name}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="p-4">
-                    <h3 className="font-bold text-lg">
-                      {brand.name}
-                    </h3>
-
-                    <p className="text-sm text-gray-500 mt-1">
-                      شاهد السيارات
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* Car Types */}
-        {selectedBrand && !selectedType && (
-          <>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <p className="text-gray-500 text-sm">
-                  الماركة المختارة
+            {/* Brands */}
+            <div className="mb-8">
+              <div className="mb-5">
+                <p className="text-sm font-bold text-[#b87333]">
+                  اختر الماركة
                 </p>
 
-                <h2 className="text-3xl font-bold">
-                  {selectedBrand.name}
+                <h2 className="mt-1 text-3xl font-black">
+                  ماركات السيارات
                 </h2>
               </div>
 
-              <button
-                onClick={resetSelection}
-                className="px-4 py-2 rounded-xl bg-white border"
-              >
-                تغيير الماركة
-              </button>
-            </div>
-
-            <h3 className="text-xl font-bold mb-5">
-              اختر نوع العربية
-            </h3>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {types.map((type) => (
-                <button
-                  key={type.id}
-                  onClick={() => selectType(type)}
-                  className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition"
-                >
-                  <div className="aspect-[4/3] bg-gray-200 flex items-center justify-center overflow-hidden">
-                    {type.image_url ? (
-                      <img
-                        src={type.image_url}
-                        alt={type.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-xl font-bold text-gray-500">
-                        {type.name}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="p-4 text-right">
-                    <h3 className="font-bold">
-                      {type.name}
-                    </h3>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* Cars */}
-        {selectedBrand && selectedType && (
-          <>
-            <div className="mb-6">
-              <p className="text-gray-500">
-                {selectedBrand.name} / {selectedType.name}
-              </p>
-
-              <h2 className="text-3xl font-bold mt-1">
-                السيارات المتاحة
-              </h2>
-            </div>
-
-            {cars.length === 0 ? (
-              <div className="bg-white rounded-2xl p-10 text-center">
-                <p className="text-gray-500">
-                  لا توجد سيارات مضافة لهذا النوع حاليًا.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {cars.map((car) => (
-                  <div
-                    key={car.id}
-                    className="bg-white rounded-2xl overflow-hidden shadow-sm"
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+                {brands.map((brand) => (
+                  <button
+                    key={brand.id}
+                    onClick={() => setSelectedBrand(brand)}
+                    className={`overflow-hidden rounded-2xl border bg-white text-right transition hover:-translate-y-1 hover:shadow-lg ${
+                      selectedBrand?.id === brand.id
+                        ? "border-[#b87333] ring-2 ring-[#b87333]/20"
+                        : ""
+                    }`}
                   >
-                    <div className="aspect-[4/3] bg-gray-200">
-                      {car.image_url ? (
+                    <div className="flex h-36 items-center justify-center bg-[#eee6dc] text-6xl">
+                      {brand.image_url ? (
                         <img
-                          src={car.image_url}
-                          alt={car.title}
-                          className="w-full h-full object-cover"
+                          src={brand.image_url}
+                          alt={brand.name}
+                          className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          صورة السيارة
-                        </div>
+                        "🚘"
                       )}
                     </div>
 
-                    <div className="p-5">
-                      <h3 className="text-xl font-bold">
-                        {car.title}
+                    <div className="p-4">
+                      <h3 className="text-lg font-black">
+                        {brand.name}
                       </h3>
 
-                      {car.description && (
-                        <p className="text-gray-500 mt-2">
-                          {car.description}
-                        </p>
-                      )}
-
-                      {car.city && (
-                        <p className="text-sm text-gray-500 mt-3">
-                          📍 {car.city}
-                        </p>
-                      )}
-
-                      {car.price !== null && (
-                        <p className="font-bold text-lg mt-3">
-                          يبدأ من {car.price} جنيه
-                        </p>
-                      )}
-
-                      <button
-                        className="w-full mt-5 bg-black text-white py-3 rounded-xl font-bold hover:opacity-90"
-                        onClick={() =>
-                          alert("سيتم إضافة طلب السيارة للمناسبة هنا.")
-                        }
-                      >
-                        اختيار السيارة
-                      </button>
+                      <p className="mt-1 text-xs text-[#746f68]">
+                        عرض الأنواع ←
+                      </p>
                     </div>
-                  </div>
+                  </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Types */}
+            {selectedBrand && (
+              <div className="mt-12">
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-[#b87333]">
+                      {selectedBrand.name}
+                    </p>
+
+                    <h2 className="mt-1 text-3xl font-black">
+                      اختر نوع العربية
+                    </h2>
+                  </div>
+
+                  <button
+                    onClick={() => setSelectedBrand(null)}
+                    className="rounded-xl border bg-white px-4 py-2 text-sm font-bold"
+                  >
+                    تغيير الماركة
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  {brandTypes.map((type) => (
+                    <div
+                      key={type.id}
+                      className="overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                    >
+                      <div className="flex h-40 items-center justify-center bg-[#eee6dc] text-6xl">
+                        {type.slug === "suv"
+                          ? "🚙"
+                          : type.slug === "cabriolet"
+                          ? "🏎️"
+                          : type.slug === "coupe"
+                          ? "🏎️"
+                          : "🚘"}
+                      </div>
+
+                      <div className="p-5 text-center">
+                        <h3 className="text-xl font-black">
+                          {type.name}
+                        </h3>
+
+                        <button className="mt-4 w-full rounded-xl bg-[#211f1c] px-4 py-3 font-bold text-white">
+                          اختيار العربية
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            <button
-              onClick={() => {
-                setSelectedType(null);
-                setCars([]);
-              }}
-              className="mt-8 px-5 py-3 rounded-xl bg-white border"
-            >
-              ← رجوع لأنواع السيارات
-            </button>
+            {!selectedBrand && brands.length > 0 && (
+              <div className="mt-8 rounded-3xl bg-[#eee6dc] p-7 text-center">
+                <div className="text-4xl">👆</div>
+
+                <h2 className="mt-3 text-2xl font-black">
+                  اختار الماركة الأول
+                </h2>
+
+                <p className="mt-2 text-[#746f68]">
+                  وبعدها هنظهر لك أنواع العربيات المتاحة.
+                </p>
+              </div>
+            )}
           </>
         )}
+      </section>
 
-      </div>
+      {/* Footer */}
+      <footer className="border-t bg-white">
+        <div className="mx-auto max-w-6xl px-4 py-8 text-center">
+          <div className="text-xl font-black">
+            Tyson <span className="text-[#b87333]">Media</span>
+          </div>
+
+          <p className="mt-2 text-sm text-[#746f68]">
+            سيارات المناسبات — اختار عربيتك للمناسبة.
+          </p>
+        </div>
+      </footer>
     </main>
   );
 }
