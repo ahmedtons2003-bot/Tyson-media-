@@ -18,6 +18,11 @@ type Service = {
   } | null;
 };
 
+const WALLET_NUMBERS = [
+  "01208338744",
+  "01208338919",
+];
+
 export default function BookingPage() {
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,6 +35,9 @@ export default function BookingPage() {
   const [location, setLocation] = useState("");
   const [eventType, setEventType] = useState("");
   const [notes, setNotes] = useState("");
+
+  const [walletNumber, setWalletNumber] = useState("");
+  const [transactionId, setTransactionId] = useState("");
 
   const [sending, setSending] = useState(false);
 
@@ -96,6 +104,10 @@ export default function BookingPage() {
 
     if (!service) return;
 
+    const depositAmount = service.deposit_required
+      ? Number(service.deposit_amount || 0)
+      : 0;
+
     if (
       !name ||
       !phone ||
@@ -106,6 +118,18 @@ export default function BookingPage() {
     ) {
       setMessage("من فضلك املأ جميع البيانات المطلوبة.");
       return;
+    }
+
+    if (depositAmount > 0) {
+      if (!walletNumber) {
+        setMessage("من فضلك اختر رقم المحفظة الذي تم التحويل إليه.");
+        return;
+      }
+
+      if (!transactionId.trim()) {
+        setMessage("من فضلك اكتب رقم عملية تحويل العربون.");
+        return;
+      }
     }
 
     setSending(true);
@@ -139,16 +163,17 @@ export default function BookingPage() {
         .substring(2, 8)
         .toUpperCase();
 
-    const depositAmount = service.deposit_required
-      ? Number(service.deposit_amount || 0)
-      : 0;
+    const remainingAmount = Math.max(
+      Number(service.price || 0) - depositAmount,
+      0
+    );
 
     const depositStatus =
       depositAmount > 0 ? "pending" : "cancelled";
 
     const paymentMethod =
       depositAmount > 0
-        ? service.deposit_payment_method || "wallet"
+        ? "orange_cash"
         : null;
 
     const { error } = await supabase
@@ -169,33 +194,47 @@ export default function BookingPage() {
         deposit_amount: depositAmount,
         deposit_status: depositStatus,
         deposit_payment_method: paymentMethod,
+
+        wallet_number: depositAmount > 0
+          ? walletNumber
+          : null,
+
+        transaction_id: depositAmount > 0
+          ? transactionId.trim()
+          : null,
       });
 
     if (error) {
       setMessage(
         "حدث خطأ أثناء إرسال الحجز: " + error.message
       );
-    } else {
-      if (depositAmount > 0) {
-        setMessage(
-          `تم إنشاء طلب الحجز ✅ رقم الحجز: ${bookingCode} — العربون المطلوب ${depositAmount.toLocaleString(
-            "ar-EG"
-          )} ج.م. سيتم الانتقال للدفع بالمحفظة بعد ربط بوابة الدفع.`
-        );
-      } else {
-        setMessage(
-          `تم إرسال طلب الحجز بنجاح ✅ رقم الحجز: ${bookingCode}`
-        );
-      }
-
-      setName("");
-      setPhone("");
-      setDate("");
-      setTime("");
-      setLocation("");
-      setEventType("");
-      setNotes("");
+      setSending(false);
+      return;
     }
+
+    if (depositAmount > 0) {
+      setMessage(
+        `تم إرسال طلب الحجز وإثبات دفع العربون ✅ رقم الحجز: ${bookingCode} — العربون: ${depositAmount.toLocaleString(
+          "ar-EG"
+        )} ج.م — المتبقي: ${remainingAmount.toLocaleString(
+          "ar-EG"
+        )} ج.م. سيتم مراجعة التحويل وتأكيد الحجز.`
+      );
+    } else {
+      setMessage(
+        `تم إرسال طلب الحجز بنجاح ✅ رقم الحجز: ${bookingCode}`
+      );
+    }
+
+    setName("");
+    setPhone("");
+    setDate("");
+    setTime("");
+    setLocation("");
+    setEventType("");
+    setNotes("");
+    setWalletNumber("");
+    setTransactionId("");
 
     setSending(false);
   }
@@ -271,6 +310,8 @@ export default function BookingPage() {
       </header>
 
       <section className="mx-auto max-w-3xl px-4 py-10">
+
+        {/* Service Information */}
         <div className="rounded-3xl bg-[#211f1c] p-7 text-white">
           <p className="text-sm opacity-70">
             📸 حجز خدمة
@@ -290,6 +331,7 @@ export default function BookingPage() {
           </p>
 
           <div className="mt-5 rounded-2xl bg-white/10 p-5">
+
             <div className="flex items-center justify-between">
               <span className="text-white/70">
                 سعر الخدمة
@@ -322,7 +364,7 @@ export default function BookingPage() {
 
                 <div className="mt-3 flex items-center justify-between text-sm">
                   <span className="text-white/60">
-                    المتبقي بعد دفع العربون
+                    المتبقي
                   </span>
 
                   <span className="font-bold">
@@ -335,19 +377,6 @@ export default function BookingPage() {
               </>
             )}
           </div>
-
-          {depositAmount > 0 && (
-            <div className="mt-4 rounded-2xl border border-[#b87333]/40 bg-[#b87333]/10 p-4">
-              <p className="font-black">
-                💳 يوجد عربون لهذه الخدمة
-              </p>
-
-              <p className="mt-2 text-sm leading-6 text-white/70">
-                سيتم دفع العربون عن طريق المحفظة
-                الإلكترونية قبل تأكيد الحجز النهائي.
-              </p>
-            </div>
-          )}
         </div>
 
         <form
@@ -358,6 +387,7 @@ export default function BookingPage() {
             بيانات الحجز
           </h2>
 
+          {/* Name */}
           <label className="mt-6 block text-sm font-bold">
             الاسم *
           </label>
@@ -371,6 +401,7 @@ export default function BookingPage() {
             placeholder="اكتب اسمك"
           />
 
+          {/* Phone */}
           <label className="mt-4 block text-sm font-bold">
             رقم الهاتف *
           </label>
@@ -385,6 +416,7 @@ export default function BookingPage() {
             placeholder="01xxxxxxxxx"
           />
 
+          {/* Date */}
           <label className="mt-4 block text-sm font-bold">
             تاريخ المناسبة *
           </label>
@@ -398,6 +430,7 @@ export default function BookingPage() {
             className="mt-2 w-full rounded-xl border p-3 outline-none focus:border-[#b87333]"
           />
 
+          {/* Time */}
           <label className="mt-4 block text-sm font-bold">
             الوقت *
           </label>
@@ -411,6 +444,7 @@ export default function BookingPage() {
             className="mt-2 w-full rounded-xl border p-3 outline-none focus:border-[#b87333]"
           />
 
+          {/* Location */}
           <label className="mt-4 block text-sm font-bold">
             مكان المناسبة *
           </label>
@@ -424,6 +458,7 @@ export default function BookingPage() {
             placeholder="مثال: الإسكندرية"
           />
 
+          {/* Event Type */}
           <label className="mt-4 block text-sm font-bold">
             نوع المناسبة *
           </label>
@@ -438,27 +473,145 @@ export default function BookingPage() {
             <option value="">
               اختر نوع المناسبة
             </option>
+
             <option value="wedding">
               فرح
             </option>
+
             <option value="engagement">
               خطوبة
             </option>
+
             <option value="birthday">
               عيد ميلاد
             </option>
+
             <option value="party">
               حفلة
             </option>
+
             <option value="portrait">
               جلسة تصوير
             </option>
+
             <option value="other">
               أخرى
             </option>
           </select>
 
-          <label className="mt-4 block text-sm font-bold">
+          {/* Deposit Payment */}
+          {depositAmount > 0 && (
+            <div className="mt-7 rounded-2xl border-2 border-[#b87333]/30 bg-[#fbfaf7] p-5">
+
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">
+                  💳
+                </span>
+
+                <h3 className="font-black">
+                  دفع العربون
+                </h3>
+              </div>
+
+              <p className="mt-3 text-sm leading-6 text-[#746f68]">
+                يجب دفع العربون المطلوب قبل تأكيد
+                الحجز النهائي.
+              </p>
+
+              <div className="mt-4 rounded-xl bg-white p-4">
+
+                <p className="text-sm font-bold text-[#746f68]">
+                  طريقة الدفع
+                </p>
+
+                <p className="mt-1 text-lg font-black">
+                  Orange Cash 🟠
+                </p>
+
+                <p className="mt-2 text-sm text-[#746f68]">
+                  قيمة العربون:
+                </p>
+
+                <p className="text-2xl font-black text-[#b87333]">
+                  {depositAmount.toLocaleString(
+                    "ar-EG"
+                  )}{" "}
+                  ج.م
+                </p>
+              </div>
+
+              <div className="mt-4">
+
+                <p className="text-sm font-bold">
+                  حول العربون على أحد أرقام Orange Cash:
+                </p>
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+
+                  {WALLET_NUMBERS.map((number) => (
+                    <button
+                      key={number}
+                      type="button"
+                      onClick={() =>
+                        setWalletNumber(number)
+                      }
+                      className={`rounded-xl border-2 p-4 text-center transition ${
+                        walletNumber === number
+                          ? "border-[#b87333] bg-[#b87333]/10"
+                          : "border-gray-200 bg-white hover:border-[#b87333]"
+                      }`}
+                    >
+                      <div className="text-sm text-[#746f68]">
+                        Orange Cash
+                      </div>
+
+                      <div className="mt-1 text-lg font-black">
+                        {number}
+                      </div>
+
+                      {walletNumber === number && (
+                        <div className="mt-2 text-sm font-bold text-[#b87333]">
+                          ✓ تم اختيار الرقم
+                        </div>
+                      )}
+                    </button>
+                  ))}
+
+                </div>
+              </div>
+
+              <div className="mt-5 rounded-xl bg-[#211f1c] p-4 text-white">
+
+                <p className="font-black">
+                  ⚠️ مهم
+                </p>
+
+                <p className="mt-2 text-sm leading-6 text-white/70">
+                  بعد تحويل مبلغ العربون، اكتب رقم عملية
+                  التحويل في الخانة التالية حتى نتمكن
+                  من مراجعة الدفع وتأكيد الحجز.
+                </p>
+
+              </div>
+
+              <label className="mt-5 block text-sm font-bold">
+                رقم عملية تحويل العربون *
+              </label>
+
+              <input
+                value={transactionId}
+                onChange={(e) =>
+                  setTransactionId(e.target.value)
+                }
+                className="mt-2 w-full rounded-xl border p-3 outline-none focus:border-[#b87333]"
+                placeholder="اكتب رقم العملية بعد التحويل"
+              />
+
+            </div>
+          )}
+
+          {/* Notes */}
+          <label className="mt-5 block text-sm font-bold">
             ملاحظات
           </label>
 
@@ -471,12 +624,14 @@ export default function BookingPage() {
             placeholder="أي تفاصيل إضافية..."
           />
 
+          {/* Message */}
           {message && (
             <div className="mt-5 rounded-xl bg-[#fbfaf7] p-4 text-center text-sm font-bold leading-6">
               {message}
             </div>
           )}
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={sending}
@@ -485,11 +640,12 @@ export default function BookingPage() {
             {sending
               ? "جاري إرسال الحجز..."
               : depositAmount > 0
-              ? `متابعة دفع العربون — ${depositAmount.toLocaleString(
+              ? `تأكيد الحجز وإرسال العربون — ${depositAmount.toLocaleString(
                   "ar-EG"
                 )} ج.م`
               : "تأكيد طلب الحجز"}
           </button>
+
         </form>
       </section>
     </main>
