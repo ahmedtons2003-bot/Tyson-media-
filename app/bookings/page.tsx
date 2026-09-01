@@ -44,7 +44,6 @@ export default function BookingPage() {
 
   const [notice, setNotice] = useState(true);
   const [message, setMessage] = useState("");
-  const [success, setSuccess] = useState(false);
 
   const minimumDate = useMemo(() => {
     const today = new Date();
@@ -55,11 +54,15 @@ export default function BookingPage() {
     return today.toISOString().split("T")[0];
   }, []);
 
+  const currentPackage =
+    packages[
+      selectedPackage as keyof typeof packages
+    ] || packages.GOLD;
+
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     setMessage("");
-    setSuccess(false);
 
     if (!name || !phone || !date || !time) {
       setMessage("من فضلك املأ البيانات الأساسية.");
@@ -73,17 +76,21 @@ export default function BookingPage() {
       return;
     }
 
-    setSuccess(true);
+    const params = new URLSearchParams({
+      name,
+      phone,
+      date,
+      time,
+      location,
+      notes,
+      category,
+      package: selectedPackage,
+      packageName: currentPackage.name,
+      price: currentPackage.price,
+    });
 
-    setMessage(
-      "تم إرسال طلب الحجز بنجاح. سيتم التواصل معك لتأكيد الموعد."
-    );
+    window.location.href = `/payment?${params.toString()}`;
   }
-
-  const currentPackage =
-    packages[
-      selectedPackage as keyof typeof packages
-    ] || packages.GOLD;
 
   return (
     <main
@@ -113,11 +120,12 @@ export default function BookingPage() {
         </div>
       </header>
 
-      {/* 30 DAYS CINEMATIC NOTICE */}
+      {/* 30 DAYS NOTICE */}
 
       {notice && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-5 backdrop-blur-md">
           <div className="relative w-full max-w-lg overflow-hidden rounded-[2rem] border border-white/10 bg-[#111] p-8 text-center shadow-2xl">
+
             <button
               type="button"
               onClick={() => setNotice(false)}
@@ -194,6 +202,7 @@ export default function BookingPage() {
           className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03]"
         >
           <div className="grid lg:grid-cols-[0.8fr_1.2fr]">
+
             {/* SUMMARY */}
 
             <aside className="bg-[#111] p-7 md:p-9">
@@ -237,10 +246,11 @@ export default function BookingPage() {
               </div>
             </aside>
 
-            {/* FORM */}
+            {/* INPUTS */}
 
             <div className="p-7 md:p-9">
               <div className="grid gap-5 md:grid-cols-2">
+
                 {/* NAME */}
 
                 <div>
@@ -385,16 +395,10 @@ export default function BookingPage() {
                 </div>
               </div>
 
-              {/* MESSAGE */}
+              {/* ERROR */}
 
               {message && (
-                <div
-                  className={`mt-6 rounded-xl p-4 text-sm font-bold ${
-                    success
-                      ? "bg-green-500/10 text-green-400"
-                      : "bg-red-500/10 text-red-400"
-                  }`}
-                >
+                <div className="mt-6 rounded-xl bg-red-500/10 p-4 text-sm font-bold text-red-400">
                   {message}
                 </div>
               )}
@@ -405,17 +409,23 @@ export default function BookingPage() {
                 type="submit"
                 className="mt-7 w-full rounded-xl bg-[#c89b63] px-6 py-5 font-black text-black transition hover:bg-white"
               >
-                إرسال طلب الحجز
+                متابعة إلى الدفع
               </button>
 
               <p className="mt-4 text-center text-xs text-white/30">
-                إرسال الطلب لا يعني تأكيد الحجز
-                النهائي. سيتم التواصل معك للتأكيد.
+                بعد إرسال البيانات سيتم الانتقال إلى
+                صفحة الدفع لإكمال الطلب.
               </p>
             </div>
           </div>
         </form>
       </section>
+
+      {/* FOOTER */}
+
+      <footer className="border-t border-white/10 py-8 text-center text-xs text-white/30">
+        © {new Date().getFullYear()} Tyson Media
+      </footer>
     </main>
   );
 }
