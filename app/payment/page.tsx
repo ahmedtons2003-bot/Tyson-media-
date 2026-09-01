@@ -3,6 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 const wallets = [
   "01208338744",
@@ -10,10 +16,10 @@ const wallets = [
 ];
 
 const packagePrices: Record<string, string> = {
-  SILVER: "3,500 ج.م",
-  GOLD: "6,000 ج.م",
-  PREMIUM: "حسب الطلب",
-  PLATINUM: "حسب الطلب",
+  SILVER: "3500",
+  GOLD: "6000",
+  PREMIUM: "",
+  PLATINUM: "",
 };
 
 export default function PaymentPage() {
@@ -24,13 +30,12 @@ export default function PaymentPage() {
   const date = searchParams.get("date") || "";
   const time = searchParams.get("time") || "";
   const location = searchParams.get("location") || "";
+  const notes = searchParams.get("notes") || "";
   const category = searchParams.get("category") || "weddings";
-  const selectedPackage =
-    searchParams.get("package") || "GOLD";
+  const selectedPackage = searchParams.get("package") || "GOLD";
 
   const packageName =
-    searchParams.get("packageName") ||
-    selectedPackage;
+    searchParams.get("packageName") || selectedPackage;
 
   const price =
     searchParams.get("price") ||
@@ -38,37 +43,115 @@ export default function PaymentPage() {
     "حسب الطلب";
 
   const [wallet, setWallet] = useState(wallets[0]);
+
   const [amount, setAmount] = useState(
-    price === "3,500 ج.م"
-      ? "3500"
-      : price === "6,000 ج.م"
-        ? "6000"
-        : ""
+    packagePrices[selectedPackage] || ""
   );
 
   const [senderName, setSenderName] = useState(name);
-  const [transactionId, setTransactionId] =
-    useState("");
+  const [transactionId, setTransactionId] = useState("");
+
+  const [receipt, setReceipt] = useState<File | null>(null);
 
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     setMessage("");
     setSuccess(false);
+
+    if (!name || !phone || !date || !time) {
+      setMessage("بيانات الحجز غير مكتملة.");
+      return;
+    }
 
     if (!amount || !senderName || !transactionId) {
       setMessage("من فضلك أكمل بيانات الدفع.");
       return;
     }
 
-    setSuccess(true);
+    setLoading(true);
 
-    setMessage(
-      "تم إرسال بيانات الدفع للمراجعة. سيتم تأكيد الحجز بعد مراجعة التحويل."
-    );
+    try {
+      const bookingCode =
+        "TM-" +
+        Date.now().toString().slice(-8);
+
+      let receiptUrl = "";
+
+      /*
+       * رفع صورة التحويل
+       * يحتاج Bucket باسم payment-receipts
+       */
+      if (receipt) {
+        const fileExt =
+          receipt.name.split(".").pop() || "jpg";
+
+        const fileName =
+          `${bookingCode}-${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } =
+          await supabase.storage
+            .from("payment-receipts")
+            .upload(fileName, receipt);
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data } =
+          supabase.storage
+            .from("payment-receipts")
+            .getPublicUrl(fileName);
+
+        receiptUrl = data.publicUrl;
+      }
+
+      const { error } = await supabase
+        .from("bookings")
+        .insert({
+          booking_code: bookingCode,
+          service: category,
+          booking_date: date,
+          booking_time: time,
+          customer_name: name,
+          phone: phone,
+          location: location,
+          event_type: packageName,
+          notes: notes,
+
+          status: "pending",
+
+          wallet_number: wallet,
+          payment_amount: Number(amount),
+          sender_name: senderName,
+          transaction_id: transactionId,
+          payment_status: "pending",
+          payment_receipt_url: receiptUrl,
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      setSuccess(true);
+
+      setMessage(
+        `تم إرسال طلب الحجز والدفع بنجاح. رقم الحجز: ${bookingCode}`
+      );
+
+    } catch (error) {
+      console.error(error);
+
+      setMessage(
+        "حدث خطأ أثناء إرسال البيانات. حاول مرة أخرى."
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -76,10 +159,9 @@ export default function PaymentPage() {
       dir="rtl"
       className="min-h-screen bg-[#080808] text-white"
     >
-      {/* HEADER */}
-
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/70 backdrop-blur-xl">
         <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-5">
+
           <Link
             href="/"
             className="text-xl font-black"
@@ -96,13 +178,14 @@ export default function PaymentPage() {
           >
             العودة للحجز
           </Link>
+
         </div>
       </header>
 
-      {/* HERO */}
+      <section className="mx-auto max-w-5xl px-5 pb-24 pt-36">
 
-      <section className="mx-auto max-w-5xl px-5 pb-10 pt-36">
-        <div className="text-center">
+        <div className="mb-10 text-center">
+
           <p className="text-xs font-black tracking-[0.35em] text-[#c89b63]">
             TYSON MEDIA • PAYMENT
           </p>
@@ -113,103 +196,72 @@ export default function PaymentPage() {
 
           <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-white/50">
             راجع بيانات الحجز ثم قم بتحويل المبلغ
-            إلى إحدى المحافظ المتاحة.
+            وإرسال بيانات العملية.
           </p>
+
         </div>
-      </section>
 
-      {/* BOOKING SUMMARY */}
+        {/* BOOKING */}
 
-      <section className="mx-auto max-w-5xl px-5 pb-6">
-        <div className="rounded-[2rem] border border-[#c89b63]/20 bg-[#c89b63]/5 p-6 md:p-8">
+        <div className="mb-6 rounded-[2rem] border border-[#c89b63]/20 bg-[#c89b63]/5 p-6 md:p-8">
 
-          <div className="mb-6 flex items-center justify-between">
+          <p className="text-xs font-black tracking-[0.3em] text-[#c89b63]">
+            BOOKING SUMMARY
+          </p>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
             <div>
-              <p className="text-xs font-black tracking-widest text-[#c89b63]">
-                BOOKING SUMMARY
-              </p>
-
-              <h2 className="mt-2 text-2xl font-black">
-                تفاصيل الحجز
-              </h2>
-            </div>
-
-            <div className="rounded-2xl bg-[#c89b63] px-5 py-3 text-center text-black">
-              <p className="text-xs font-bold">
-                الباكدج
-              </p>
-
-              <p className="font-black">
-                {packageName}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-
-            <div className="rounded-xl bg-black/20 p-4">
               <p className="text-xs text-white/40">
-                العميل
+                الاسم
               </p>
 
-              <p className="mt-2 font-bold">
+              <p className="mt-1 font-bold">
                 {name || "—"}
               </p>
             </div>
 
-            <div className="rounded-xl bg-black/20 p-4">
+            <div>
               <p className="text-xs text-white/40">
-                رقم الهاتف
+                الهاتف
               </p>
 
-              <p className="mt-2 font-bold">
+              <p className="mt-1 font-bold">
                 {phone || "—"}
               </p>
             </div>
 
-            <div className="rounded-xl bg-black/20 p-4">
+            <div>
               <p className="text-xs text-white/40">
                 التاريخ
               </p>
 
-              <p className="mt-2 font-bold">
+              <p className="mt-1 font-bold">
                 {date || "—"}
               </p>
             </div>
 
-            <div className="rounded-xl bg-black/20 p-4">
+            <div>
               <p className="text-xs text-white/40">
                 الوقت
               </p>
 
-              <p className="mt-2 font-bold">
+              <p className="mt-1 font-bold">
                 {time || "—"}
               </p>
             </div>
 
-            <div className="rounded-xl bg-black/20 p-4 sm:col-span-2">
-              <p className="text-xs text-white/40">
-                المكان
-              </p>
+          </div>
 
-              <p className="mt-2 font-bold">
-                {location || "لم يتم تحديد المكان"}
-              </p>
-            </div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
 
             <div className="rounded-xl bg-black/20 p-4">
               <p className="text-xs text-white/40">
-                نوع الخدمة
+                الباكدج
               </p>
 
-              <p className="mt-2 font-bold">
-                {category === "engagement"
-                  ? "تصوير خطوبة"
-                  : category === "portrait"
-                    ? "Portrait"
-                    : category === "fashion"
-                      ? "Fashion"
-                      : "أفراح ومناسبات"}
+              <p className="mt-1 text-lg font-black">
+                {packageName}
               </p>
             </div>
 
@@ -218,114 +270,80 @@ export default function PaymentPage() {
                 قيمة الباكدج
               </p>
 
-              <p className="mt-2 font-black text-[#d4ad7b]">
+              <p className="mt-1 text-lg font-black text-[#d4ad7b]">
                 {price}
               </p>
             </div>
+
+            <div className="rounded-xl bg-black/20 p-4">
+              <p className="text-xs text-white/40">
+                المكان
+              </p>
+
+              <p className="mt-1 font-bold">
+                {location || "—"}
+              </p>
+            </div>
+
           </div>
+
         </div>
-      </section>
 
-      {/* PAYMENT */}
+        {/* PAYMENT */}
 
-      <section className="mx-auto max-w-5xl px-5 pb-24">
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-6 md:p-9">
 
-          <div className="mb-8">
-            <p className="text-xs font-black tracking-[0.3em] text-[#c89b63]">
-              PAYMENT METHOD
-            </p>
+          <h2 className="text-3xl font-black">
+            الدفع بالمحفظة
+          </h2>
 
-            <h2 className="mt-3 text-3xl font-black">
-              الدفع بالمحفظة
-            </h2>
-          </div>
+          <p className="mt-2 text-sm text-white/40">
+            اختر الرقم الذي قمت بالتحويل إليه.
+          </p>
 
           {/* WALLETS */}
 
-          <div>
-            <label className="mb-4 block text-sm font-black">
-              حوّل إلى أحد الأرقام التالية
-            </label>
+          <div className="mt-7 grid gap-4 md:grid-cols-2">
 
-            <div className="grid gap-4 md:grid-cols-2">
+            {wallets.map((number) => (
 
-              {wallets.map((number) => (
-                <button
-                  key={number}
-                  type="button"
-                  onClick={() => setWallet(number)}
-                  className={`rounded-2xl border p-5 text-right transition ${
-                    wallet === number
-                      ? "border-[#c89b63] bg-[#c89b63]/10"
-                      : "border-white/10 bg-white/[0.03]"
-                  }`}
-                >
-                  <p className="text-xs text-white/40">
-                    محفظة إلكترونية
+              <button
+                key={number}
+                type="button"
+                onClick={() => setWallet(number)}
+                className={`rounded-2xl border p-5 text-right transition ${
+                  wallet === number
+                    ? "border-[#c89b63] bg-[#c89b63]/10"
+                    : "border-white/10 bg-white/[0.03]"
+                }`}
+              >
+
+                <p className="text-xs text-white/40">
+                  محفظة إلكترونية
+                </p>
+
+                <p className="mt-2 text-xl font-black">
+                  {number}
+                </p>
+
+                {wallet === number && (
+                  <p className="mt-2 text-xs font-bold text-[#c89b63]">
+                    ✓ الرقم المختار
                   </p>
+                )}
 
-                  <p className="mt-2 text-xl font-black tracking-wide">
-                    {number}
-                  </p>
+              </button>
 
-                  {wallet === number && (
-                    <p className="mt-2 text-xs font-bold text-[#c89b63]">
-                      ✓ الرقم المختار
-                    </p>
-                  )}
-                </button>
-              ))}
+            ))}
 
-            </div>
-          </div>
-
-          {/* PAYMENT STEPS */}
-
-          <div className="my-8 rounded-2xl border border-[#c89b63]/20 bg-[#c89b63]/5 p-6">
-            <p className="font-black text-[#d4ad7b]">
-              طريقة الدفع
-            </p>
-
-            <div className="mt-4 space-y-3 text-sm leading-7 text-white/60">
-              <p>
-                <span className="font-black text-[#c89b63]">
-                  01
-                </span>{" "}
-                اختر رقم المحفظة.
-              </p>
-
-              <p>
-                <span className="font-black text-[#c89b63]">
-                  02
-                </span>{" "}
-                حوّل قيمة الحجز المطلوبة.
-              </p>
-
-              <p>
-                <span className="font-black text-[#c89b63]">
-                  03
-                </span>{" "}
-                احتفظ برقم العملية.
-              </p>
-
-              <p>
-                <span className="font-black text-[#c89b63]">
-                  04
-                </span>{" "}
-                أدخل بيانات التحويل واضغط إرسال.
-              </p>
-            </div>
           </div>
 
           {/* FORM */}
 
           <form
             onSubmit={handleSubmit}
-            className="space-y-5"
+            className="mt-8 space-y-5"
           >
-
-            {/* AMOUNT */}
 
             <div>
               <label className="mb-2 block text-sm font-bold">
@@ -339,16 +357,9 @@ export default function PaymentPage() {
                 onChange={(e) =>
                   setAmount(e.target.value)
                 }
-                placeholder="اكتب المبلغ"
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-4 outline-none transition focus:border-[#c89b63]"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-4 outline-none focus:border-[#c89b63]"
               />
-
-              <p className="mt-2 text-xs text-white/30">
-                قيمة الباكدج: {price}
-              </p>
             </div>
-
-            {/* SENDER */}
 
             <div>
               <label className="mb-2 block text-sm font-bold">
@@ -362,11 +373,9 @@ export default function PaymentPage() {
                   setSenderName(e.target.value)
                 }
                 placeholder="الاسم كما يظهر في التحويل"
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-4 outline-none transition focus:border-[#c89b63]"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-4 outline-none focus:border-[#c89b63]"
               />
             </div>
-
-            {/* TRANSACTION */}
 
             <div>
               <label className="mb-2 block text-sm font-bold">
@@ -380,13 +389,14 @@ export default function PaymentPage() {
                   setTransactionId(e.target.value)
                 }
                 placeholder="أدخل رقم العملية"
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-4 outline-none transition focus:border-[#c89b63]"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-4 outline-none focus:border-[#c89b63]"
               />
             </div>
 
             {/* RECEIPT */}
 
             <div>
+
               <label className="mb-2 block text-sm font-bold">
                 إثبات الدفع
               </label>
@@ -398,7 +408,9 @@ export default function PaymentPage() {
                 </span>
 
                 <span className="mt-3 text-sm font-bold">
-                  ارفع صورة التحويل
+                  {receipt
+                    ? receipt.name
+                    : "ارفع صورة التحويل"}
                 </span>
 
                 <span className="mt-2 text-xs text-white/30">
@@ -409,13 +421,21 @@ export default function PaymentPage() {
                   type="file"
                   accept="image/png,image/jpeg"
                   className="hidden"
+                  onChange={(e) =>
+                    setReceipt(
+                      e.target.files?.[0] || null
+                    )
+                  }
                 />
+
               </label>
+
             </div>
 
             {/* MESSAGE */}
 
             {message && (
+
               <div
                 className={`rounded-xl border p-4 text-sm font-bold ${
                   success
@@ -425,30 +445,36 @@ export default function PaymentPage() {
               >
                 {message}
               </div>
+
             )}
 
-            {/* SUBMIT */}
+            {/* BUTTON */}
 
             <button
               type="submit"
-              className="w-full rounded-xl bg-[#c89b63] px-6 py-5 font-black text-black transition hover:bg-white"
+              disabled={loading}
+              className="w-full rounded-xl bg-[#c89b63] px-6 py-5 font-black text-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
             >
-              إرسال بيانات الدفع
+              {loading
+                ? "جاري إرسال البيانات..."
+                : "إرسال بيانات الدفع"}
             </button>
 
             <p className="text-center text-xs leading-6 text-white/30">
-              لن يتم اعتبار الحجز مؤكدًا إلا بعد
-              مراجعة عملية الدفع من الإدارة.
+              الحجز يظل قيد المراجعة حتى يتم
+              التحقق من عملية التحويل.
             </p>
-          </form>
-        </div>
-      </section>
 
-      {/* FOOTER */}
+          </form>
+
+        </div>
+
+      </section>
 
       <footer className="border-t border-white/10 py-8 text-center text-xs text-white/30">
         © {new Date().getFullYear()} Tyson Media
       </footer>
+
     </main>
   );
 }
