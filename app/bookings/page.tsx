@@ -7,19 +7,19 @@ import { useSearchParams } from "next/navigation";
 const packages = {
   SILVER: {
     name: "Silver",
-    price: "3,500 ج.م",
+    price: 3500,
   },
   GOLD: {
     name: "Gold",
-    price: "6,000 ج.م",
+    price: 6000,
   },
   PREMIUM: {
     name: "Premium",
-    price: "حسب الطلب",
+    price: null,
   },
   PLATINUM: {
     name: "Platinum",
-    price: "حسب الطلب",
+    price: null,
   },
 };
 
@@ -59,13 +59,31 @@ export default function BookingPage() {
       selectedPackage as keyof typeof packages
     ] || packages.GOLD;
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  const deposit =
+    currentPackage.price !== null
+      ? currentPackage.price * 0.5
+      : null;
+
+  const remaining =
+    currentPackage.price !== null
+      ? currentPackage.price - deposit!
+      : null;
+
+  function formatMoney(value: number) {
+    return new Intl.NumberFormat("ar-EG").format(value);
+  }
+
+  function handleSubmit(
+    e: FormEvent<HTMLFormElement>
+  ) {
     e.preventDefault();
 
     setMessage("");
 
     if (!name || !phone || !date || !time) {
-      setMessage("من فضلك املأ البيانات الأساسية.");
+      setMessage(
+        "من فضلك املأ البيانات الأساسية."
+      );
       return;
     }
 
@@ -86,10 +104,22 @@ export default function BookingPage() {
       category,
       package: selectedPackage,
       packageName: currentPackage.name,
-      price: currentPackage.price,
+      price:
+        currentPackage.price !== null
+          ? String(currentPackage.price)
+          : "",
+      deposit:
+        deposit !== null
+          ? String(deposit)
+          : "",
+      remaining:
+        remaining !== null
+          ? String(remaining)
+          : "",
     });
 
-    window.location.href = `/payment?${params.toString()}`;
+    window.location.href =
+      `/payment?${params.toString()}`;
   }
 
   return (
@@ -97,10 +127,13 @@ export default function BookingPage() {
       dir="rtl"
       className="min-h-screen bg-[#080808] text-white"
     >
+
       {/* HEADER */}
 
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/60 backdrop-blur-xl">
+
         <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-5">
+
           <Link
             href="/"
             className="text-xl font-black"
@@ -117,18 +150,24 @@ export default function BookingPage() {
           >
             العودة للتصوير
           </Link>
+
         </div>
+
       </header>
 
       {/* 30 DAYS NOTICE */}
 
       {notice && (
+
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-5 backdrop-blur-md">
+
           <div className="relative w-full max-w-lg overflow-hidden rounded-[2rem] border border-white/10 bg-[#111] p-8 text-center shadow-2xl">
 
             <button
               type="button"
-              onClick={() => setNotice(false)}
+              onClick={() =>
+                setNotice(false)
+              }
               className="absolute left-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-lg transition hover:bg-white hover:text-black"
             >
               ×
@@ -153,6 +192,7 @@ export default function BookingPage() {
             </p>
 
             <div className="mt-7 rounded-2xl border border-[#c89b63]/20 bg-[#c89b63]/5 p-5">
+
               <p className="text-sm font-bold text-[#d4ad7b]">
                 ⚠️ المواعيد الأقل من 30 يومًا
               </p>
@@ -160,25 +200,33 @@ export default function BookingPage() {
               <p className="mt-2 text-xs leading-6 text-white/45">
                 لن يتم قبولها من خلال نظام الحجز.
               </p>
+
             </div>
 
             <button
               type="button"
-              onClick={() => setNotice(false)}
+              onClick={() =>
+                setNotice(false)
+              }
               className="mt-7 w-full rounded-xl bg-[#c89b63] px-6 py-4 font-black text-black transition hover:bg-white"
             >
               فهمت، أريد المتابعة
             </button>
+
           </div>
+
         </div>
+
       )}
 
       {/* HERO */}
 
       <section className="relative overflow-hidden pt-20">
+
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#4a351f,transparent_45%)] opacity-40" />
 
         <div className="relative mx-auto max-w-6xl px-5 py-20 text-center">
+
           <p className="text-xs font-black tracking-[0.4em] text-[#c89b63]">
             TYSON MEDIA • BOOKING
           </p>
@@ -191,21 +239,26 @@ export default function BookingPage() {
             اختار الباكدج المناسبة وحدد موعد مناسبتك،
             وإحنا نتواصل معاك لتأكيد الحجز.
           </p>
+
         </div>
+
       </section>
 
       {/* FORM */}
 
       <section className="mx-auto max-w-5xl px-5 pb-24">
+
         <form
           onSubmit={handleSubmit}
           className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03]"
         >
+
           <div className="grid lg:grid-cols-[0.8fr_1.2fr]">
 
             {/* SUMMARY */}
 
             <aside className="bg-[#111] p-7 md:p-9">
+
               <p className="text-xs font-black tracking-[0.3em] text-[#c89b63]">
                 YOUR PACKAGE
               </p>
@@ -214,9 +267,52 @@ export default function BookingPage() {
                 {currentPackage.name}
               </h3>
 
-              <p className="mt-3 text-2xl font-black text-[#d4ad7b]">
-                {currentPackage.price}
-              </p>
+              {currentPackage.price !== null ? (
+
+                <>
+                  <p className="mt-3 text-2xl font-black text-[#d4ad7b]">
+                    {formatMoney(
+                      currentPackage.price
+                    )}{" "}
+                    ج.م
+                  </p>
+
+                  <div className="mt-6 space-y-3">
+
+                    <div className="flex items-center justify-between rounded-xl bg-[#c89b63]/10 p-4">
+
+                      <span className="text-sm text-white/50">
+                        العربون 50%
+                      </span>
+
+                      <span className="font-black text-[#d4ad7b]">
+                        {formatMoney(deposit!)} ج.م
+                      </span>
+
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl bg-white/5 p-4">
+
+                      <span className="text-sm text-white/50">
+                        المتبقي
+                      </span>
+
+                      <span className="font-black">
+                        {formatMoney(remaining!)} ج.م
+                      </span>
+
+                    </div>
+
+                  </div>
+                </>
+
+              ) : (
+
+                <p className="mt-3 text-lg font-bold text-[#d4ad7b]">
+                  السعر حسب الطلب
+                </p>
+
+              )}
 
               <div className="my-8 h-px bg-white/10" />
 
@@ -235,6 +331,7 @@ export default function BookingPage() {
               </p>
 
               <div className="mt-8 rounded-2xl border border-[#c89b63]/20 bg-[#c89b63]/5 p-5">
+
                 <p className="font-black text-[#d4ad7b]">
                   📅 سياسة الحجز
                 </p>
@@ -243,17 +340,21 @@ export default function BookingPage() {
                   يجب اختيار موعد بعد 30 يومًا
                   على الأقل.
                 </p>
+
               </div>
+
             </aside>
 
             {/* INPUTS */}
 
             <div className="p-7 md:p-9">
+
               <div className="grid gap-5 md:grid-cols-2">
 
                 {/* NAME */}
 
                 <div>
+
                   <label className="mb-2 block text-sm font-bold">
                     الاسم بالكامل *
                   </label>
@@ -266,11 +367,13 @@ export default function BookingPage() {
                     placeholder="اكتب اسمك"
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-4 outline-none transition focus:border-[#c89b63]"
                   />
+
                 </div>
 
                 {/* PHONE */}
 
                 <div>
+
                   <label className="mb-2 block text-sm font-bold">
                     رقم الهاتف *
                   </label>
@@ -284,11 +387,13 @@ export default function BookingPage() {
                     inputMode="tel"
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-4 outline-none transition focus:border-[#c89b63]"
                   />
+
                 </div>
 
                 {/* PACKAGE */}
 
                 <div>
+
                   <label className="mb-2 block text-sm font-bold">
                     الباكدج *
                   </label>
@@ -302,27 +407,31 @@ export default function BookingPage() {
                     }
                     className="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-4 outline-none focus:border-[#c89b63]"
                   >
+
                     <option value="SILVER">
-                      Silver
+                      Silver — 3,500 ج.م
                     </option>
 
                     <option value="GOLD">
-                      Gold
+                      Gold — 6,000 ج.م
                     </option>
 
                     <option value="PREMIUM">
-                      Premium
+                      Premium — حسب الطلب
                     </option>
 
                     <option value="PLATINUM">
-                      Platinum
+                      Platinum — حسب الطلب
                     </option>
+
                   </select>
+
                 </div>
 
                 {/* DATE */}
 
                 <div>
+
                   <label className="mb-2 block text-sm font-bold">
                     تاريخ المناسبة *
                   </label>
@@ -340,11 +449,13 @@ export default function BookingPage() {
                   <p className="mt-2 text-xs text-[#c89b63]">
                     يجب الحجز قبل الموعد بـ30 يومًا على الأقل.
                   </p>
+
                 </div>
 
                 {/* TIME */}
 
                 <div>
+
                   <label className="mb-2 block text-sm font-bold">
                     وقت المناسبة *
                   </label>
@@ -357,11 +468,13 @@ export default function BookingPage() {
                     }
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-4 outline-none focus:border-[#c89b63]"
                   />
+
                 </div>
 
                 {/* LOCATION */}
 
                 <div>
+
                   <label className="mb-2 block text-sm font-bold">
                     مكان المناسبة
                   </label>
@@ -374,11 +487,13 @@ export default function BookingPage() {
                     placeholder="المحافظة / المكان"
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-4 outline-none focus:border-[#c89b63]"
                   />
+
                 </div>
 
                 {/* NOTES */}
 
                 <div className="md:col-span-2">
+
                   <label className="mb-2 block text-sm font-bold">
                     ملاحظات
                   </label>
@@ -392,33 +507,81 @@ export default function BookingPage() {
                     placeholder="أي تفاصيل إضافية..."
                     className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-4 outline-none focus:border-[#c89b63]"
                   />
+
                 </div>
+
               </div>
 
-              {/* ERROR */}
+              {/* MESSAGE */}
 
               {message && (
+
                 <div className="mt-6 rounded-xl bg-red-500/10 p-4 text-sm font-bold text-red-400">
                   {message}
                 </div>
+
               )}
+
+              {/* DEPOSIT INFO */}
+
+              <div className="mt-7 rounded-2xl border border-[#c89b63]/20 bg-[#c89b63]/5 p-5">
+
+                <div className="flex items-center justify-between gap-4">
+
+                  <div>
+
+                    <p className="text-xs text-white/40">
+                      العربون المطلوب
+                    </p>
+
+                    <p className="mt-1 text-xl font-black text-[#d4ad7b]">
+
+                      {deposit !== null
+                        ? `${formatMoney(
+                            deposit
+                          )} ج.م`
+                        : "يحدد بعد التواصل"}
+
+                    </p>
+
+                  </div>
+
+                  <div className="text-left">
+
+                    <p className="text-xs text-white/40">
+                      نسبة العربون
+                    </p>
+
+                    <p className="mt-1 font-black">
+                      50%
+                    </p>
+
+                  </div>
+
+                </div>
+
+              </div>
 
               {/* SUBMIT */}
 
               <button
                 type="submit"
-                className="mt-7 w-full rounded-xl bg-[#c89b63] px-6 py-5 font-black text-black transition hover:bg-white"
+                className="mt-5 w-full rounded-xl bg-[#c89b63] px-6 py-5 font-black text-black transition hover:bg-white"
               >
-                متابعة إلى الدفع
+                متابعة إلى دفع العربون
               </button>
 
               <p className="mt-4 text-center text-xs text-white/30">
-                بعد إرسال البيانات سيتم الانتقال إلى
-                صفحة الدفع لإكمال الطلب.
+                سيتم الانتقال إلى صفحة الدفع لإتمام
+                العربون المطلوب وتسجيل طلب الحجز.
               </p>
+
             </div>
+
           </div>
+
         </form>
+
       </section>
 
       {/* FOOTER */}
@@ -426,6 +589,7 @@ export default function BookingPage() {
       <footer className="border-t border-white/10 py-8 text-center text-xs text-white/30">
         © {new Date().getFullYear()} Tyson Media
       </footer>
+
     </main>
   );
 }
