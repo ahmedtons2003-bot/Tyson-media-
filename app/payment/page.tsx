@@ -50,7 +50,6 @@ export default function PaymentPage() {
 
   const [senderName, setSenderName] = useState(name);
   const [transactionId, setTransactionId] = useState("");
-
   const [receipt, setReceipt] = useState<File | null>(null);
 
   const [message, setMessage] = useState("");
@@ -77,15 +76,10 @@ export default function PaymentPage() {
 
     try {
       const bookingCode =
-        "TM-" +
-        Date.now().toString().slice(-8);
+        "TM-" + Date.now().toString().slice(-8);
 
       let receiptUrl = "";
 
-      /*
-       * رفع صورة التحويل
-       * يحتاج Bucket باسم payment-receipts
-       */
       if (receipt) {
         const fileExt =
           receipt.name.split(".").pop() || "jpg";
@@ -122,9 +116,7 @@ export default function PaymentPage() {
           location: location,
           event_type: packageName,
           notes: notes,
-
           status: "pending",
-
           wallet_number: wallet,
           payment_amount: Number(amount),
           sender_name: senderName,
@@ -140,9 +132,8 @@ export default function PaymentPage() {
       setSuccess(true);
 
       setMessage(
-        `تم إرسال طلب الحجز والدفع بنجاح. رقم الحجز: ${bookingCode}`
+        `تم إرسال بيانات الحجز والدفع بنجاح. رقم الحجز: ${bookingCode}`
       );
-
     } catch (error) {
       console.error(error);
 
@@ -161,7 +152,6 @@ export default function PaymentPage() {
     >
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/70 backdrop-blur-xl">
         <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-5">
-
           <Link
             href="/"
             className="text-xl font-black"
@@ -178,14 +168,11 @@ export default function PaymentPage() {
           >
             العودة للحجز
           </Link>
-
         </div>
       </header>
 
       <section className="mx-auto max-w-5xl px-5 pb-24 pt-36">
-
         <div className="mb-10 text-center">
-
           <p className="text-xs font-black tracking-[0.35em] text-[#c89b63]">
             TYSON MEDIA • PAYMENT
           </p>
@@ -198,19 +185,14 @@ export default function PaymentPage() {
             راجع بيانات الحجز ثم قم بتحويل المبلغ
             وإرسال بيانات العملية.
           </p>
-
         </div>
 
-        {/* BOOKING */}
-
         <div className="mb-6 rounded-[2rem] border border-[#c89b63]/20 bg-[#c89b63]/5 p-6 md:p-8">
-
           <p className="text-xs font-black tracking-[0.3em] text-[#c89b63]">
             BOOKING SUMMARY
           </p>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-
             <div>
               <p className="text-xs text-white/40">
                 الاسم
@@ -250,11 +232,9 @@ export default function PaymentPage() {
                 {time || "—"}
               </p>
             </div>
-
           </div>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
-
             <div className="rounded-xl bg-black/20 p-4">
               <p className="text-xs text-white/40">
                 الباكدج
@@ -271,7 +251,11 @@ export default function PaymentPage() {
               </p>
 
               <p className="mt-1 text-lg font-black text-[#d4ad7b]">
-                {price}
+                {price === "3500"
+                  ? "3,500 ج.م"
+                  : price === "6000"
+                    ? "6,000 ج.م"
+                    : price}
               </p>
             </div>
 
@@ -284,15 +268,10 @@ export default function PaymentPage() {
                 {location || "—"}
               </p>
             </div>
-
           </div>
-
         </div>
 
-        {/* PAYMENT */}
-
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-6 md:p-9">
-
           <h2 className="text-3xl font-black">
             الدفع بالمحفظة
           </h2>
@@ -301,12 +280,8 @@ export default function PaymentPage() {
             اختر الرقم الذي قمت بالتحويل إليه.
           </p>
 
-          {/* WALLETS */}
-
           <div className="mt-7 grid gap-4 md:grid-cols-2">
-
             {wallets.map((number) => (
-
               <button
                 key={number}
                 type="button"
@@ -317,7 +292,6 @@ export default function PaymentPage() {
                     : "border-white/10 bg-white/[0.03]"
                 }`}
               >
-
                 <p className="text-xs text-white/40">
                   محفظة إلكترونية
                 </p>
@@ -331,20 +305,14 @@ export default function PaymentPage() {
                     ✓ الرقم المختار
                   </p>
                 )}
-
               </button>
-
             ))}
-
           </div>
-
-          {/* FORM */}
 
           <form
             onSubmit={handleSubmit}
             className="mt-8 space-y-5"
           >
-
             <div>
               <label className="mb-2 block text-sm font-bold">
                 المبلغ المحول *
@@ -393,16 +361,12 @@ export default function PaymentPage() {
               />
             </div>
 
-            {/* RECEIPT */}
-
             <div>
-
               <label className="mb-2 block text-sm font-bold">
                 إثبات الدفع
               </label>
 
               <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/20 bg-white/[0.02] px-5 py-10 text-center transition hover:border-[#c89b63]">
-
                 <span className="text-4xl">
                   📷
                 </span>
@@ -427,15 +391,10 @@ export default function PaymentPage() {
                     )
                   }
                 />
-
               </label>
-
             </div>
 
-            {/* MESSAGE */}
-
             {message && (
-
               <div
                 className={`rounded-xl border p-4 text-sm font-bold ${
                   success
@@ -445,10 +404,7 @@ export default function PaymentPage() {
               >
                 {message}
               </div>
-
             )}
-
-            {/* BUTTON */}
 
             <button
               type="submit"
@@ -464,17 +420,13 @@ export default function PaymentPage() {
               الحجز يظل قيد المراجعة حتى يتم
               التحقق من عملية التحويل.
             </p>
-
           </form>
-
         </div>
-
       </section>
 
       <footer className="border-t border-white/10 py-8 text-center text-xs text-white/30">
         © {new Date().getFullYear()} Tyson Media
       </footer>
-
     </main>
   );
 }
